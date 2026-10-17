@@ -188,6 +188,7 @@ const I18N = {
     ad_reset_plans: "Let the client choose 7 days again", ad_history: "Daily history", ad_today: "Today", ad_days_chosen: "Days chosen",
     ad_one_day: "One schedule = one day: breakfast, 2 snacks, lunch and dinner.", h_date: "Date", h_plan: "Plan", h_meals: "meals",
     err_link: "Paste a full link that starts with https://",
+    demo_on: "Demo mode — sample data, nothing is saved for real", demo_exit: "Exit demo", demo_try_client: "Try the demo (sample client)", demo_try_pro: "Try the demo (sample clients)",
     soon: "Coming soon"
   },
 
@@ -374,6 +375,7 @@ const I18N = {
     ad_reset_plans: "خلّيه يختار أيامه من جديد", ad_history: "سجل الأيام", ad_today: "اليوم", ad_days_chosen: "الأيام",
     ad_one_day: "الجدول الواحد = يوم واحد: فطور، سناكين، غداء وعشاء.", h_date: "التاريخ", h_plan: "الجدول", h_meals: "وجبات",
     err_link: "حطي رابط كامل يبدأ بـ https://",
+    demo_on: "نسخة تجريبية — بيانات وهمية، ما ينحفظ شي حقيقي", demo_exit: "خروج من التجربة", demo_try_client: "جرّب النسخة التجريبية (عميل وهمي)", demo_try_pro: "جربي النسخة التجريبية (عملاء وهميين)",
     soon: "قريباً"
   }
 };

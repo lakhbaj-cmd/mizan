@@ -3,7 +3,7 @@
 const SUPABASE_URL = "https://cpphymyouugaqkufphcq.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Q_9Cn11tSC6hraPhQcQItg_oKMPD_8i";
 
-const DB = (() => {
+let DB = (() => {
   const SESSION_KEY = "mizan_auth";
   let session = null;
   try { session = JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch (e) {}
