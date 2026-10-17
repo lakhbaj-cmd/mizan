@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#4f7a5f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ميزان">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+  <title>My portal | حسابي — Mizan Nutrition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <a class="logo" href="index.html" data-i18n="brand">ميزان للتغذية</a>
+    <nav>
+      <a href="index.html" data-i18n="nav_home">الرئيسية</a>
+      <a href="index.html#packages" data-i18n="nav_packages">الباقات</a>
+      <a href="start.html" data-i18n="nav_start">ابدأ الآن</a>
+      <a href="portal.html" data-i18n="nav_portal">حسابي</a>
+      <a href="admin.html" data-i18n="nav_admin">الأخصائية</a>
+      <button class="lang-btn" id="lang-btn" data-i18n="lang_btn">English</button>
+    </nav>
+  </header>
+
+  <main>
+    <p class="muted loading" id="loading" hidden data-i18n="loading"></p>
+
+    <!-- Login -->
+    <div class="card login-box" id="login-view">
+      <h2 data-i18n="pt_login"></h2>
+      <form id="login-form" novalidate>
+        <div class="field"><label for="l-email" data-i18n="f_email"></label><input id="l-email" type="email" required autocomplete="email"></div>
+        <div class="field" style="margin-top:12px"><label for="l-password" data-i18n="pw_label"></label><input id="l-password" type="password" required autocomplete="current-password"></div>
+        <p class="error" id="login-err"></p>
+        <button type="submit" class="btn" style="width:100%" data-i18n="pt_login_btn"></button>
+      </form>
+      <p class="muted" style="text-align:center"><span data-i18n="pt_no_account"></span> <a href="start.html" data-i18n="pt_start_link"></a></p>
+    </div>
+
+    <!-- Client home -->
+    <div id="dash-view" hidden>
+      <div class="dash-head">
+        <h2 style="margin:0"><span data-i18n="pt_hello"></span> <span id="d-name"></span></h2>
+        <button class="btn outline small" id="logout-btn" data-i18n="pt_logout"></button>
+      </div>
+
+      <!-- InBody reminder from the dietitian -->
+      <div class="card ib-alert" id="ib-alert" hidden>
+        <h3 style="margin-top:0">📋 <span data-i18n="ib_alert_title"></span></h3>
+        <p data-i18n="ib_alert_text"></p>
+        <div class="form-grid">
+          <div class="field"><label for="ib-weight" data-i18n="ib_weight"></label><input id="ib-weight" type="number" step="0.1"></div>
+          <div class="field"><label for="ib-fat" data-i18n="ib_fat"></label><input id="ib-fat" type="number" step="0.1"></div>
+          <div class="field"><label for="ib-muscle" data-i18n="ib_muscle"></label><input id="ib-muscle" type="number" step="0.1"></div>
+        </div>
+        <button class="btn" id="ib-submit" style="margin-top:12px" data-i18n="ib_submit"></button>
+      </div>
+      <p class="note" id="ib-thanks" hidden data-i18n="ib_thanks"></p>
+
+      <!-- A: waiting for the dietitian to confirm the bank transfer -->
+      <div class="card" id="v-wait" hidden style="margin-top:14px">
+        <div id="wait-pending">
+          <span class="status-pill" data-i18n="tr_pending"></span>
+          <p class="note" data-i18n="pt_wait_bank"></p>
+        </div>
+        <div id="wait-rejected" hidden>
+          <span class="status-pill bad" data-i18n="tr_rejected"></span>
+          <p data-i18n="tr_rejected_text"></p>
+          <div class="field"><label for="re-receipt" data-i18n="tr_reupload"></label><input id="re-receipt" type="file" accept="image/*,application/pdf"></div>
+          <p class="error" id="re-err"></p>
+          <button class="btn" id="re-send" data-i18n="tr_submit"></button>
+        </div>
+      </div>
+
+      <!-- B: choose a schedule that matches the calories -->
+      <div id="v-choose" hidden style="margin-top:14px">
+        <h3 data-i18n="pt_choose_sched" style="margin-bottom:4px"></h3>
+        <p class="muted" style="margin-top:0"><span data-i18n="pt_choose_sub"></span> (<b id="c-kcal"></b> <span data-i18n="kcal_short"></span>)</p>
+        <div class="sched-list" id="sched-options"></div>
+        <p class="note" id="no-match" hidden data-i18n="pt_no_match"></p>
+      </div>
+
+      <!-- C: progress + next meal -->
+      <div id="v-plan" hidden>
+        <div class="card progress-card" style="margin-top:14px">
+          <div class="progress-top">
+            <div><p class="muted small-label" data-i18n="pt_progress"></p>
+              <p class="stat"><span data-i18n="pt_day"></span> <span id="p-day"></span> <span data-i18n="pt_of"></span> <span id="p-days"></span></p></div>
+            <div><p class="muted small-label" data-i18n="pt_meals_done"></p><p class="stat"><bdi dir="ltr"><span id="p-done"></span> / <span id="p-total"></span></bdi></p></div>
+            <div><p class="muted small-label" data-i18n="pt_today_kcal"></p><p class="stat"><bdi dir="ltr"><span id="p-kcal"></span> / <span id="p-target"></span></bdi></p></div>
+          </div>
+          <div class="bar"><div class="bar-fill" id="p-bar"></div></div>
+          <p class="muted" style="margin:8px 0 0;font-size:.9rem"><span data-i18n="pt_plan_name"></span>: <b id="p-sched"></b></p>
+        </div>
+
+        <div class="card next-meal" id="next-card">
+          <p class="eyebrow" data-i18n="pt_next"></p>
+          <p class="meal-type" id="n-type"></p>
+          <h3 id="n-name"></h3>
+          <p class="meal-meta"><b id="n-kcal"></b> <span data-i18n="kcal_short"></span> · <span id="n-protein"></span> <span data-i18n="protein_short"></span> <span id="n-portion"></span></p>
+          <details open><summary data-i18n="pt_ingredients"></summary><p id="n-ing"></p></details>
+          <details><summary data-i18n="pt_how"></summary><p id="n-steps"></p></details>
+          <div class="btn-row" style="justify-content:flex-start;margin-top:14px">
+            <button class="btn" id="done-btn" data-i18n="btn_done"></button>
+            <button class="btn outline" id="skip-btn" data-i18n="btn_skip"></button>
+          </div>
+        </div>
+
+        <div class="card finished" id="finished-card" hidden>
+          <div class="avatar" style="margin:0 auto">🎉</div>
+          <p data-i18n="pt_finished"></p>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <h3 data-i18n="pt_today" style="margin-top:0"></h3>
+          <ul class="meal-list" id="today-list"></ul>
+        </div>
+
+        <div class="card" style="margin-top:14px" id="workout-card" hidden>
+          <h3 data-i18n="pt_workout"></h3>
+          <p class="note" data-i18n="pt_workout_empty"></p>
+        </div>
+      </div>
+
+      <p class="demo-note" data-i18n="pt_demo"></p>
+    </div>
+  </main>
+
+  <footer data-i18n="footer_note"></footer>
+
+  <script src="i18n.js"></script>
+  <script src="recipes.js"></script>
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#4f7a5f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ميزان">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+  <title>Dietitian | الأخصائية — Mizan Nutrition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <a class="logo" href="index.html" data-i18n="brand">ميزان للتغذية</a>
+    <nav>
+      <a href="index.html" data-i18n="nav_home">الرئيسية</a>
+      <a href="portal.html" data-i18n="nav_portal">حسابي</a>
+      <a href="admin.html" data-i18n="nav_admin">الأخصائية</a>
+      <button class="lang-btn" id="lang-btn" data-i18n="lang_btn">English</button>
+    </nav>
+  </header>
+
+  <main>
+    <p class="muted loading" id="loading" hidden data-i18n="loading"></p>
+
+    <!-- Dietitian sign in -->
+    <div class="card login-box" id="pin-view">
+      <h2 data-i18n="ad_title"></h2>
+      <form id="admin-login" novalidate>
+        <div class="field" id="a-name-field" hidden><label for="a-name" data-i18n="f_name"></label><input id="a-name" autocomplete="name"></div>
+        <div class="field" style="margin-top:12px"><label for="a-email" data-i18n="f_email"></label><input id="a-email" type="email" autocomplete="email"></div>
+        <div class="field" style="margin-top:12px"><label for="a-password" data-i18n="pw_label"></label><input id="a-password" type="password" autocomplete="current-password"></div>
+        <p class="error" id="pin-err"></p>
+        <button class="btn" style="width:100%" id="admin-submit" data-i18n="ad_enter"></button>
+      </form>
+      <button class="link-btn" id="toggle-signup" type="button" data-i18n="ad_need_account"></button>
+    </div>
+
+    <!-- Signed in, but not activated as the dietitian yet -->
+    <div class="card login-box" id="not-admin" hidden>
+      <h2 data-i18n="ad_title"></h2>
+      <p class="note" data-i18n="ad_not_admin"></p>
+      <button class="btn outline small admin-logout" data-i18n="pt_logout"></button>
+    </div>
+
+    <div id="admin-view" hidden>
+      <div class="dash-head">
+        <h2 data-i18n="ad_title" style="text-align:start;margin:0"></h2>
+        <div class="btn-row">
+          <button class="btn outline small" id="refresh-btn" data-i18n="ad_refresh"></button>
+          <button class="btn outline small admin-logout" data-i18n="pt_logout"></button>
+        </div>
+      </div>
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="sched" data-i18n="tab_sched"></button>
+        <button class="tab" data-tab="recipes" data-i18n="tab_recipes"></button>
+        <button class="tab" data-tab="clients" data-i18n="tab_clients"></button>
+      </div>
+      <p class="note" id="admin-msg" hidden></p>
+
+      <!-- Schedules -->
+      <section class="tab-panel" id="tab-sched">
+        <div class="sched-list" id="sched-list">
+          <button class="add-card" id="add-sched-btn" aria-label="New schedule"><span class="plus">+</span><span data-i18n="ad_new_sched"></span></button>
+        </div>
+        <p class="muted" id="no-sched" data-i18n="ad_no_sched"></p>
+
+        <div class="card" id="sched-editor" hidden>
+          <h3 data-i18n="ad_new_sched" style="margin-top:0"></h3>
+          <div class="form-grid">
+            <div class="field"><label for="s-name" data-i18n="ad_sched_name"></label><input id="s-name" placeholder="1500 – Week 1"></div>
+            <div class="field"><label for="s-kcal" data-i18n="ad_sched_kcal"></label><input id="s-kcal" type="number" min="1000" max="4000" step="50" value="1500"></div>
+            <div class="field"><label for="s-days" data-i18n="ad_sched_days"></label><input id="s-days" type="number" min="1" max="14" value="7"></div>
+          </div>
+          <div class="btn-row" style="justify-content:flex-start;margin:14px 0">
+            <button class="btn outline small" id="autofill-btn" data-i18n="ad_autofill"></button>
+          </div>
+          <p class="muted" style="font-size:.9rem" data-i18n="ad_portion_note"></p>
+          <div id="days-editor" class="days-editor"></div>
+          <p class="error" id="sched-err"></p>
+          <div class="actions">
+            <button class="btn outline" id="cancel-sched" data-i18n="ad_cancel"></button>
+            <button class="btn" id="save-sched" data-i18n="ad_add_sched"></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Recipes -->
+      <section class="tab-panel" id="tab-recipes" hidden>
+        <div class="filter-row" id="recipe-filter"></div>
+        <div class="recipe-grid" id="recipe-grid">
+        </div>
+        <div class="card" style="margin-top:16px">
+          <h3 style="margin-top:0">+ <span data-i18n="ad_new_recipe"></span></h3>
+          <div class="form-grid">
+            <div class="field"><label for="r-name" data-i18n="ad_r_name"></label><input id="r-name"></div>
+            <div class="field"><label for="r-meal" data-i18n="ad_r_meal"></label>
+              <select id="r-meal"><option value="b" data-i18n="meal_b"></option><option value="l" data-i18n="meal_l"></option><option value="d" data-i18n="meal_d"></option><option value="s" data-i18n="meal_s"></option></select></div>
+            <div class="field"><label for="r-kcal" data-i18n="ad_r_kcal"></label><input id="r-kcal" type="number" min="20" max="2000"></div>
+            <div class="field"><label for="r-protein" data-i18n="ad_r_protein"></label><input id="r-protein" type="number" min="0" max="200"></div>
+            <div class="field full"><label for="r-ing" data-i18n="ad_r_ing"></label><textarea id="r-ing"></textarea></div>
+            <div class="field full"><label for="r-steps" data-i18n="ad_r_steps"></label><textarea id="r-steps"></textarea></div>
+          </div>
+          <p class="error" id="recipe-err"></p>
+          <button class="btn" id="save-recipe" data-i18n="ad_save_recipe"></button>
+        </div>
+      </section>
+
+      <!-- Clients -->
+      <section class="tab-panel" id="tab-clients" hidden>
+        <div id="clients-list">
+          <div class="table-wrap"><table id="clients-table"></table></div>
+          <p class="muted" id="no-clients" data-i18n="ad_no_clients"></p>
+        </div>
+        <div id="client-detail" hidden>
+          <button class="btn outline small" id="detail-back" data-i18n="ad_back"></button>
+          <div class="card pay-review" id="cd-pay" style="margin-top:12px" hidden>
+            <h3 style="margin-top:0" data-i18n="ad_receipt"></h3>
+            <div id="cd-pay-info"></div>
+            <div id="cd-receipt"></div>
+            <div class="btn-row" id="cd-pay-actions" style="justify-content:flex-start;margin-top:12px">
+              <button class="btn" id="confirm-pay" data-i18n="ad_confirm_pay"></button>
+              <button class="btn outline" id="reject-pay" data-i18n="ad_reject"></button>
+            </div>
+          </div>
+          <div class="card" style="margin-top:12px">
+            <h3 id="cd-name" style="margin-top:0"></h3>
+            <div class="info-grid" id="cd-info"></div>
+          </div>
+          <div class="card" style="margin-top:12px">
+            <h3 style="margin-top:0">InBody</h3>
+            <p><span data-i18n="ib_last"></span>: <b id="cd-ib-last"></b> <span class="status-pill" id="cd-ib-pending" hidden data-i18n="ib_requested"></span></p>
+            <div class="btn-row" style="justify-content:flex-start">
+              <button class="btn" id="send-ib" data-i18n="ad_send_ib"></button>
+              <a class="btn wa" id="wa-client" href="#" target="_blank" rel="noopener" data-i18n="ad_wa_client"></a>
+            </div>
+            <h4 data-i18n="ib_history"></h4>
+            <div class="table-wrap"><table id="cd-ib-table"></table></div>
+            <p class="muted" id="cd-ib-none" data-i18n="ib_none"></p>
+          </div>
+        </div>
+      </section>
+
+      <p class="demo-note" data-i18n="ad_demo"></p>
+    </div>
+  </main>
+
+  <script src="i18n.js"></script>
+  <script src="recipes.js"></script>
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

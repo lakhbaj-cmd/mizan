@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#4f7a5f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ميزان">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+  <title>Start | ابدأ — Mizan Nutrition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <a class="logo" href="index.html" data-i18n="brand">ميزان للتغذية</a>
+    <nav>
+      <a href="index.html" data-i18n="nav_home">الرئيسية</a>
+      <a href="index.html#packages" data-i18n="nav_packages">الباقات</a>
+      <a href="start.html" data-i18n="nav_start">ابدأ الآن</a>
+      <a href="portal.html" data-i18n="nav_portal">حسابي</a>
+      <a href="admin.html" data-i18n="nav_admin">الأخصائية</a>
+      <button class="lang-btn" id="lang-btn" data-i18n="lang_btn">English</button>
+    </nav>
+  </header>
+
+  <main>
+    <h2 data-i18n="st_title"></h2>
+    <div class="progress" id="progress">
+      <span data-i18n="st_step1"></span><span data-i18n="st_step2"></span><span data-i18n="st_step3"></span><span data-i18n="st_step4"></span><span data-i18n="st_step5"></span>
+    </div>
+
+    <!-- Step 1: info -->
+    <div class="card step show" id="step-1">
+      <form id="info-form" novalidate>
+        <div class="form-grid">
+          <div class="field"><label for="f-name" data-i18n="f_name"></label><input id="f-name" required autocomplete="name"></div>
+          <div class="field"><label for="f-phone" data-i18n="f_phone"></label><input id="f-phone" type="tel" required placeholder="05XXXXXXXX" autocomplete="tel"></div>
+          <div class="field"><label for="f-email" data-i18n="f_email"></label><input id="f-email" type="email" required autocomplete="email"></div>
+          <div class="field"><label for="f-password" data-i18n="f_password"></label><input id="f-password" type="password" required minlength="6" autocomplete="new-password"></div>
+          <div class="field"><span class="label" style="font-weight:600" data-i18n="f_sex"></span>
+            <div class="radio-row">
+              <label><input type="radio" name="sex" value="female" checked> <span data-i18n="f_female"></span></label>
+              <label><input type="radio" name="sex" value="male"> <span data-i18n="f_male"></span></label>
+            </div>
+          </div>
+          <div class="field"><label for="f-age" data-i18n="f_age"></label><input id="f-age" type="number" min="13" max="90" required></div>
+          <div class="field"><label for="f-height" data-i18n="f_height"></label><input id="f-height" type="number" min="120" max="220" required></div>
+          <div class="field"><label for="f-weight" data-i18n="f_weight"></label><input id="f-weight" type="number" min="30" max="250" step="0.1" required></div>
+          <div class="field"><label for="f-activity" data-i18n="f_activity"></label>
+            <select id="f-activity">
+              <option value="1.2" data-i18n="act_1"></option>
+              <option value="1.375" data-i18n="act_2"></option>
+              <option value="1.55" data-i18n="act_3"></option>
+              <option value="1.725" data-i18n="act_4"></option>
+            </select>
+          </div>
+          <div class="field"><label for="f-goal" data-i18n="f_goal"></label>
+            <select id="f-goal">
+              <option value="lose" data-i18n="goal_lose"></option>
+              <option value="keep" data-i18n="goal_keep"></option>
+              <option value="gain" data-i18n="goal_gain"></option>
+            </select>
+          </div>
+          <div class="field full"><label for="f-health" data-i18n="f_health"></label><textarea id="f-health" data-i18n-ph="ph_health"></textarea></div>
+          <div class="field full"><label for="f-food" data-i18n="f_food"></label><textarea id="f-food" data-i18n-ph="ph_food"></textarea></div>
+          <div class="field full rule-card card">
+            <b data-i18n="rule_title"></b>
+            <p data-i18n="rule_text" style="margin:4px 0 8px"></p>
+            <label class="check"><input type="checkbox" id="f-rule"> <span data-i18n="rule_agree"></span></label>
+          </div>
+        </div>
+        <p class="error" id="err-1"></p>
+        <div class="actions"><span></span><button type="submit" class="btn" data-i18n="btn_calc"></button></div>
+      </form>
+    </div>
+
+    <!-- Step 2: calories -->
+    <div class="card step result" id="step-2">
+      <h3 data-i18n="res_title"></h3>
+      <p class="kcal" id="kcal">0</p>
+      <p class="muted" data-i18n="res_kcal"></p>
+      <p class="muted"><span data-i18n="res_bmr"></span> <b id="bmr">0</b></p>
+      <p class="note" data-i18n="res_note"></p>
+      <div class="actions">
+        <button class="btn outline" data-go="1" data-i18n="btn_back"></button>
+        <button class="btn" data-go="3" data-i18n="btn_next"></button>
+      </div>
+    </div>
+
+    <!-- Step 3: package -->
+    <div class="step" id="step-3">
+      <div class="packages">
+        <div class="card package pick" data-package="basic">
+          <h3 data-i18n="pk_basic_name"></h3>
+          <div class="price">250 <small data-i18n="sar"></small></div>
+          <ul class="features"><li data-i18n="pk_f1"></li><li data-i18n="pk_f2"></li><li data-i18n="pk_f3"></li><li data-i18n="pk_f4"></li></ul>
+        </div>
+        <div class="card package pick featured" data-package="plus">
+          <span class="badge" data-i18n="pk_popular"></span>
+          <h3 data-i18n="pk_plus_name"></h3>
+          <div class="price">300 <small data-i18n="sar"></small></div>
+          <ul class="features"><li data-i18n="pk_f1"></li><li data-i18n="pk_f2"></li><li data-i18n="pk_f3"></li><li data-i18n="pk_f4"></li><li data-i18n="pk_f5"></li></ul>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn outline" data-go="2" data-i18n="btn_back"></button>
+        <button class="btn" data-go="4" data-i18n="btn_next"></button>
+      </div>
+    </div>
+
+    <!-- Step 4: payment -->
+    <div class="card step" id="step-4">
+      <h3 data-i18n="pay_title" style="margin-top:0"></h3>
+      <div class="amount-box"><span data-i18n="pay_total"></span> <b id="pay-total"></b></div>
+
+      <ol class="pay-steps">
+        <li data-i18n="tr_step1"></li>
+        <li data-i18n="tr_step2"></li>
+        <li data-i18n="tr_step3"></li>
+      </ol>
+
+      <div class="bank-card">
+        <div class="bank-row"><span class="muted small-label" data-i18n="tr_bank"></span><b id="bank-name"></b></div>
+        <div class="bank-row"><span class="muted small-label" data-i18n="tr_holder"></span><b id="bank-holder"></b></div>
+        <div class="bank-row iban-row">
+          <span class="muted small-label">IBAN</span>
+          <b id="bank-iban" dir="ltr" class="iban"></b>
+          <button class="btn outline small" id="copy-iban" type="button" data-i18n="tr_copy"></button>
+        </div>
+        <button class="btn outline small" id="copy-amount" type="button" data-i18n="tr_copy_amount"></button>
+      </div>
+
+      <div class="field" style="margin-top:16px">
+        <label for="receipt" data-i18n="tr_receipt"></label>
+        <input id="receipt" type="file" accept="image/*,application/pdf">
+        <p class="muted" style="font-size:.85rem;margin:4px 0 0" data-i18n="tr_receipt_hint"></p>
+        <img id="receipt-preview" class="receipt-preview" alt="" hidden>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label for="sender" data-i18n="tr_sender"></label>
+        <input id="sender" autocomplete="name">
+      </div>
+      <p class="error" id="err-4"></p>
+      <div class="actions">
+        <button class="btn outline" data-go="3" data-i18n="btn_back"></button>
+        <button class="btn" id="pay-btn" data-i18n="tr_submit"></button>
+      </div>
+    </div>
+
+    <!-- Step 5: done -->
+    <div class="card step result" id="step-5">
+      <div class="avatar" style="margin:0 auto">✅</div>
+      <h3 data-i18n="done_title"></h3>
+      <p data-i18n="tr_done_text"></p>
+      <div class="btn-row">
+        <a class="btn wa" href="#" id="wa-send" data-i18n="btn_wa_send"></a>
+        <a class="btn outline" href="portal.html" data-i18n="btn_portal"></a>
+      </div>
+      <p class="error" id="err-5"></p>
+    </div>
+  </main>
+
+  <footer data-i18n="footer_note"></footer>
+
+  <script src="i18n.js"></script>
+  <script src="recipes.js"></script>
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

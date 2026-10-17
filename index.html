@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#4f7a5f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ميزان">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+  <title>Mizan Nutrition | ميزان للتغذية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <a class="logo" href="index.html" data-i18n="brand">ميزان للتغذية</a>
+    <nav>
+      <a href="index.html" data-i18n="nav_home">الرئيسية</a>
+      <a href="index.html#packages" data-i18n="nav_packages">الباقات</a>
+      <a href="start.html" data-i18n="nav_start">ابدأ الآن</a>
+      <a href="portal.html" data-i18n="nav_portal">حسابي</a>
+      <a href="admin.html" data-i18n="nav_admin">الأخصائية</a>
+      <button class="lang-btn" id="lang-btn" data-i18n="lang_btn">English</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1 data-i18n="hero_title">كُل صح. وعِش بتوازن.</h1>
+      <p data-i18n="hero_sub"></p>
+      <div class="btn-row">
+        <a class="btn" href="start.html" data-i18n="hero_start">ابدأ الآن</a>
+        <a class="btn wa" href="#" id="wa-hero" data-i18n="hero_whatsapp">راسلنا على واتساب</a>
+      </div>
+    </section>
+
+    <section>
+      <h2 data-i18n="how_title"></h2>
+      <div class="steps">
+        <div class="card"><span class="step-num">1</span><h3 data-i18n="how_1_t"></h3><p data-i18n="how_1_d"></p></div>
+        <div class="card"><span class="step-num">2</span><h3 data-i18n="how_2_t"></h3><p data-i18n="how_2_d"></p></div>
+        <div class="card"><span class="step-num">3</span><h3 data-i18n="how_3_t"></h3><p data-i18n="how_3_d"></p></div>
+        <div class="card"><span class="step-num">4</span><h3 data-i18n="how_4_t"></h3><p data-i18n="how_4_d"></p></div>
+      </div>
+    </section>
+
+    <section id="packages">
+      <h2 data-i18n="pk_title"></h2>
+      <div class="packages">
+        <div class="card package">
+          <h3 data-i18n="pk_basic_name"></h3>
+          <div class="price">250 <small><span data-i18n="sar"></span> / <span data-i18n="pk_period"></span></small></div>
+          <ul class="features">
+            <li data-i18n="pk_f1"></li>
+            <li data-i18n="pk_f2"></li>
+            <li data-i18n="pk_f3"></li>
+            <li data-i18n="pk_f4"></li>
+          </ul>
+          <a class="btn outline" href="start.html?package=basic" data-i18n="pk_choose"></a>
+        </div>
+        <div class="card package featured">
+          <span class="badge" data-i18n="pk_popular"></span>
+          <h3 data-i18n="pk_plus_name"></h3>
+          <div class="price">300 <small><span data-i18n="sar"></span> / <span data-i18n="pk_period"></span></small></div>
+          <ul class="features">
+            <li data-i18n="pk_f1"></li>
+            <li data-i18n="pk_f2"></li>
+            <li data-i18n="pk_f3"></li>
+            <li data-i18n="pk_f4"></li>
+            <li data-i18n="pk_f5"></li>
+          </ul>
+          <a class="btn" href="start.html?package=plus" data-i18n="pk_choose"></a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="card rule-card">
+        <h3 data-i18n="rule_title" style="margin-top:0"></h3>
+        <p data-i18n="rule_text"></p>
+      </div>
+    </section>
+
+    <section>
+      <h2 data-i18n="about_title"></h2>
+      <div class="card about">
+        <div class="avatar">🥗</div>
+        <p data-i18n="about_text"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer data-i18n="footer_note"></footer>
+
+  <script src="i18n.js"></script>
+  <script src="recipes.js"></script>
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
