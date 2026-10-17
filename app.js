@@ -233,7 +233,7 @@ if ($("login-form")) {
     try {
       const rows = await DB.select("profiles", "select=*&id=eq." + u.id);
       me = rows[0] || null;
-      if (me && me.role === "admin") { location.href = "admin.html"; return; }
+      if (me && me.role === "admin") { location.href = "dietitian.html"; return; }
       await Promise.all([loadSchedules(), loadRecipes()]);
     } catch (e) { me = null; $("login-err").textContent = friendlyError(e); }
     $("loading").hidden = true;
@@ -567,6 +567,23 @@ if ($("admin-login")) {
     $("wa-client").href = waLink(saudiNumber(c.phone), (LANG === "ar" ? "مرحباً " : "Hi ") + (c.name || "").split(" ")[0] + "، " + t("ib_alert_text"));
     $("cd-ib-pending").hidden = !c.inbody_requested;
 
+    // schedule progress
+    const sch = scheduleById(c.schedule_id);
+    if (!sch) { $("cd-progress").innerHTML = "<p class='muted'>" + esc(t("cd_no_sched")) + "</p>"; }
+    else {
+      const st = planState(c, sch);
+      const pct = Math.round(st.handled / st.total * 100);
+      const skipped = st.slots.filter(x => x.status === "skip").length;
+      const days = sch.days.map((day, di) => "<tr><th>" + esc(t("pt_day")) + " " + (di + 1) + "</th>" + MEALS.map(m => {
+        const stt = (c.progress || {})[slotKey(di, m)]; const r = recipeById(day[m]);
+        return "<td class='" + (stt ? "is-" + stt : "") + "'>" + (stt === "done" ? "✅ " : stt === "skip" ? "⏭️ " : "") + esc(r ? rText(r, "name") : "—") + "</td>";
+      }).join("") + "</tr>").join("");
+      $("cd-progress").innerHTML = "<p><b>" + esc(sch.name) + "</b> · " + sch.kcal + " " + esc(t("kcal_short")) + "</p>" +
+        "<div class='bar'><div class='bar-fill' style='width:" + pct + "%'></div></div>" +
+        "<p class='muted'>" + esc(t("cd_meals")) + ": " + st.doneCount + " / " + st.total + " · " + esc(t("cd_skipped")) + ": " + skipped + " · " + esc(t("pt_day")) + " " + (st.dayIndex + 1) + "</p>" +
+        "<div class='table-wrap'><table class='progress-table'><tr><th></th>" + MEALS.map(m => "<th>" + esc(t("meal_" + m)) + "</th>").join("") + "</tr>" + days + "</table></div>";
+    }
+
     // payment review
     $("cd-pay").hidden = !!c.paid;
     if (!c.paid) {
@@ -621,11 +638,12 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
   try { dismissed = localStorage.getItem("mizan_install_closed") === "1"; } catch (e) {}
   if (standalone || dismissed || window.top !== window) return;
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const installKey = document.getElementById("admin-login") ? "app_install_pro" : "app_install";
   const bar = document.createElement("div");
   bar.className = "install-bar";
   bar.hidden = true;
-  bar.innerHTML = '<img src="icon-192.png" alt="" width="40" height="40"><span class="grow" data-i18n="' + (isIOS ? "app_ios" : "app_install") + '"></span>' +
-    (isIOS ? "" : '<button class="btn small" id="install-btn" data-i18n="app_install"></button>') +
+  bar.innerHTML = '<img src="icon-192.png" alt="" width="40" height="40"><span class="grow" data-i18n="' + (isIOS ? "app_ios" : installKey) + '"></span>' +
+    (isIOS ? "" : '<button class="btn small" id="install-btn" data-i18n="' + installKey + '"></button>') +
     '<button class="install-close" id="install-close" aria-label="Close">×</button>';
   const main = document.querySelector("main");
   if (!main) return;

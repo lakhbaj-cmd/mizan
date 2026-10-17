@@ -1,0 +1,34 @@
+{
+  "id": "./dietitian.html",
+  "name": "Mizan Pro | ميزان للأخصائية",
+  "short_name": "ميزان برو",
+  "description": "Dietitian app: clients, schedules, recipes, payments and InBody.",
+  "start_url": "./dietitian.html",
+  "scope": "./dietitian",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f8f3",
+  "theme_color": "#2f4a3a",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "pro-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "pro-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "pro-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

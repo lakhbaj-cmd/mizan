@@ -135,7 +135,7 @@ const I18N = {
     ad_delete: "Delete", ad_confirm_delete: "Press again to delete",
     ad_new_recipe: "New recipe", ad_r_name: "Recipe name", ad_r_meal: "Meal", ad_r_kcal: "Calories", ad_r_protein: "Protein (g)",
     ad_r_ing: "Ingredients", ad_r_steps: "How to make it", ad_save_recipe: "Save recipe", ad_all: "All", ad_custom: "Your recipe",
-    ad_c_name: "Client", ad_c_target: "Target", ad_c_plan: "Schedule", ad_c_progress: "Progress", ad_auto: "Auto (closest calories)",
+    ad_c_name: "Client", ad_c_target: "Calorie target", ad_c_plan: "Schedule", ad_c_progress: "Progress", ad_auto: "Auto (closest calories)",
     ad_no_clients: "No clients yet. They appear here after they sign up.",
     ad_saved: "Schedule added. Clients with the closest calories get it automatically.",
     ad_recipe_saved: "Recipe saved to your library.",
@@ -172,6 +172,7 @@ const I18N = {
     pw_label: "Password", loading: "Loading…", ad_create: "Create account", ad_have_account: "I already have an account — sign in",
     ad_need_account: "First time? Create the dietitian account", ad_refresh: "Refresh",
     ad_not_admin: "You're signed in, but this account isn't activated as the dietitian yet. Once it's activated, refresh this page.",
+    pro_badge: "Pro", app_install_pro: "Install the Mizan Pro app", cd_no_sched: "Hasn't chosen a schedule yet.", cd_meals: "Meals done", cd_skipped: "Skipped", cd_last: "Last meal",
     soon: "Coming soon"
   },
 
@@ -305,7 +306,7 @@ const I18N = {
     ad_delete: "حذف", ad_confirm_delete: "اضغطي مرة ثانية للحذف",
     ad_new_recipe: "وصفة جديدة", ad_r_name: "اسم الوصفة", ad_r_meal: "الوجبة", ad_r_kcal: "السعرات", ad_r_protein: "البروتين (جم)",
     ad_r_ing: "المكونات", ad_r_steps: "طريقة التحضير", ad_save_recipe: "حفظ الوصفة", ad_all: "الكل", ad_custom: "وصفتك",
-    ad_c_name: "العميل", ad_c_target: "الهدف", ad_c_plan: "الجدول", ad_c_progress: "التقدّم", ad_auto: "تلقائي (أقرب سعرات)",
+    ad_c_name: "العميل", ad_c_target: "السعرات المستهدفة", ad_c_plan: "الجدول", ad_c_progress: "التقدّم", ad_auto: "تلقائي (أقرب سعرات)",
     ad_no_clients: "ما فيه عملاء للحين. بيطلعون هنا بعد ما يسجّلون.",
     ad_saved: "تمت إضافة الجدول. العملاء اللي سعراتهم أقرب له ينضاف لهم تلقائياً.",
     ad_recipe_saved: "انحفظت الوصفة في مكتبتك.",
@@ -342,6 +343,7 @@ const I18N = {
     pw_label: "كلمة المرور", loading: "جاري التحميل…", ad_create: "إنشاء الحساب", ad_have_account: "عندي حساب — تسجيل الدخول",
     ad_need_account: "أول مرة؟ أنشئي حساب الأخصائية", ad_refresh: "تحديث",
     ad_not_admin: "سجّلتي دخول، بس الحساب لسا ما تفعّل كحساب الأخصائية. أول ما يتفعّل، حدّثي الصفحة.",
+    pro_badge: "برو", app_install_pro: "حمّلي تطبيق ميزان برو", cd_no_sched: "لسا ما اختار جدول.", cd_meals: "وجبات خلّصها", cd_skipped: "تخطّاها", cd_last: "آخر وجبة",
     soon: "قريباً"
   }
 };

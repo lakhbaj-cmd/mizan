@@ -253,3 +253,9 @@ details p { margin: 6px 0 0; color: var(--text); }
 .link-btn { background: none; border: none; color: var(--green); font: inherit; font-weight: 700; cursor: pointer; margin-top: 12px; padding: 4px 0; text-decoration: underline; }
 .loading { text-align: center; }
 .btn.is-busy { opacity: .6; cursor: progress; }
+.pro-header { background: var(--green-dark); border-bottom-color: var(--green-dark); }
+.pro-header .logo { color: var(--on-green); }
+.pro-badge { background: var(--accent); color: var(--on-green); font-size: .75rem; padding: 2px 10px; border-radius: 20px; vertical-align: middle; }
+.progress-table td { font-size: .8rem; }
+.progress-table td.is-done { background: var(--green-soft); color: var(--text); }
+.progress-table td.is-skip { color: var(--muted); text-decoration: line-through; }

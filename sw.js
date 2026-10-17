@@ -1,9 +1,9 @@
 // Mizan service worker: makes the app open fast and work offline.
 // When you change any file, raise the version number so phones get the update.
-const VERSION = "mizan-v3";
+const VERSION = "mizan-v4";
 const FILES = [
-  "./", "index.html", "start.html", "portal.html", "admin.html",
-  "style.css", "i18n.js", "recipes.js", "db.js", "app.js", "manifest.webmanifest",
+  "./", "index.html", "start.html", "portal.html", "dietitian.html",
+  "style.css", "i18n.js", "recipes.js", "db.js", "app.js", "manifest.webmanifest", "manifest-dietitian.webmanifest",
   "icon-192.png", "icon-512.png", "icon-180.png"
 ];
 
