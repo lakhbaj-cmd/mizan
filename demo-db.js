@@ -39,7 +39,7 @@ if (isDemo()) {
         kcal: 1250, bmr: 1390, package: "plus", paid: false, pay_status: "pending", receipt_path: "demo/receipt.svg", receipt_type: "image", receipt_sender: "Noura K.", receipt_amount: 300,
         receipt_date: new Date().toISOString(), plans: [], history: [], inbody_requested: true, created_at: new Date().toISOString() },
       { id: "demo-reem", role: "client", name: "ريم سعد", email: "reem@demo.sa", phone: "0560000000", sex: "female", age: 24, height: 165, weight: 60, activity: 1.55, goal: "keep",
-        kcal: 1850, bmr: 1350, package: "basic", paid: true, pay_status: "confirmed", plans: [], history: [], inbody_requested: false, created_at: new Date().toISOString() }
+        kcal: null, bmr: null, package: "basic", paid: true, pay_status: "confirmed", plans: [], history: [], inbody_requested: false, created_at: new Date().toISOString() }
     ],
     schedules: (typeof DEMO_SCHEDULES === "function" ? DEMO_SCHEDULES() : []).map((s, i) => ({ id: "demo-s" + i, created_at: new Date().toISOString(), ...s })),
     recipes: [],
@@ -64,7 +64,7 @@ if (isDemo()) {
     if (order) { const [f, dir] = order.split("."); rows = rows.slice().sort((a, b) => (a[f] > b[f] ? 1 : a[f] < b[f] ? -1 : 0) * (dir === "desc" ? -1 : 1)); }
     return rows;
   }
-  DB = {
+  Object.assign(DB, {   // replace the methods (works even with an old cached db.js)
     async signUp() { throw new Error("demo"); },
     async signIn() { throw new Error("demo"); },
     async signOut() { exitDemo(); },
@@ -75,7 +75,7 @@ if (isDemo()) {
     async remove(table, id) { await wait(); getData()[table] = getData()[table].filter(x => x.id !== id); keepData(); },
     async upload(bucket, path) { return path; },
     async signedUrl() { return receiptSVG; }
-  };
+  });
 
   // banner on every page
   document.addEventListener("DOMContentLoaded", () => {

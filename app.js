@@ -111,13 +111,19 @@ function dayState(c) {
   return { today, plan, factor, slots, next, done, handled, kcal };
 }
 
-// ===== Calories (Mifflin-St Jeor) =====
-function calcCalories(c) {
-  const bmr = 10 * c.weight + 6.25 * c.height - 5 * c.age + (c.sex === "male" ? 5 : -161);
+// ===== Calories =====
+// Without InBody: Mifflin-St Jeor (height, weight, age).
+// With InBody (more accurate): the BMR printed on the InBody report, or Katch-McArdle from body fat %:
+//   BMR = 370 + 21.6 × lean body mass (kg), lean mass = weight × (1 − fat%)
+function calcCalories(c, ib) {
+  let bmr = 10 * c.weight + 6.25 * c.height - 5 * c.age + (c.sex === "male" ? 5 : -161);
+  let method = "std";
+  if (ib && ib.bmr) { bmr = ib.bmr; method = "ib"; }
+  else if (ib && ib.fat) { bmr = 370 + 21.6 * c.weight * (1 - ib.fat / 100); method = "ib"; }
   let daily = bmr * c.activity;
   if (c.goal === "lose") daily = Math.max(daily - 500, c.sex === "male" ? 1500 : 1200);
   if (c.goal === "gain") daily += 300;
-  return { bmr: Math.round(bmr / 10) * 10, kcal: Math.round(daily / 10) * 10 };
+  return { bmr: Math.round(bmr / 10) * 10, kcal: Math.round(daily / 10) * 10, method };
 }
 
 // ===== Home page =====
@@ -132,7 +138,11 @@ if (waHero) {
 // ===== Start page (sign up + pay) =====
 if ($("info-form")) {
   let client = {};
+  let ibData = null;       // InBody results typed at sign-up (optional)
   let current = 1;
+  document.querySelectorAll("input[name=ibmode]").forEach(r => r.addEventListener("change", () => {
+    $("ib-fields").hidden = document.querySelector("input[name=ibmode]:checked").value !== "with";
+  }));
   const params = new URLSearchParams(location.search);
   let chosen = PACKAGES[params.get("package")] ? params.get("package") : "plus";
 
@@ -140,7 +150,7 @@ if ($("info-form")) {
     current = n;
     document.querySelectorAll(".step").forEach(s => s.classList.remove("show"));
     $("step-" + n).classList.add("show");
-    document.querySelectorAll("#progress span").forEach((s, i) => { s.className = i + 1 === n ? "active" : i + 1 < n ? "done" : ""; });
+    document.querySelectorAll("#progress span").forEach(s => { const k = +s.dataset.step; s.className = k === n ? "active" : k < n ? "done" : ""; });
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (n === 4) $("pay-total").textContent = PACKAGES[chosen].price + " " + t("sar");
   }
@@ -154,20 +164,20 @@ if ($("info-form")) {
     const required = ["f-name", "f-phone", "f-email", "f-password", "f-age", "f-height", "f-weight"];
     const bad = required.some(id => !$(id).value.trim()) || !$("f-email").validity.valid || $("f-password").value.length < 6;
     if (bad) { $("err-1").textContent = t("err_fill"); return; }
-    if (!$("f-rule").checked) { $("err-1").textContent = t("err_rule"); return; }
+    const withIb = document.querySelector("input[name=ibmode]:checked").value === "with";
+    const num = id => { const v = parseFloat($(id).value); return isNaN(v) ? null : v; };
+    ibData = withIb ? { fat: num("f-ib-fat"), muscle: num("f-ib-muscle"), bmr: num("f-ib-bmr") } : null;
+    if (withIb && !ibData.fat && !ibData.bmr) { $("err-1").textContent = t("err_ib_fat"); return; }
     $("err-1").textContent = "";
     client = {
       name: $("f-name").value.trim(), phone: $("f-phone").value.trim(), email: $("f-email").value.trim().toLowerCase(),
       sex: document.querySelector("input[name=sex]:checked").value,
       age: +$("f-age").value, height: +$("f-height").value, weight: +$("f-weight").value,
       activity: +$("f-activity").value, goal: $("f-goal").value,
-      health: $("f-health").value.trim(), food: $("f-food").value.trim(), agreed_inbody: true
+      health: $("f-health").value.trim(), food: $("f-food").value.trim(), agreed_inbody: withIb
     };
-    const r = calcCalories(client);
-    client.kcal = r.kcal; client.bmr = r.bmr;
-    $("kcal").textContent = r.kcal.toLocaleString();
-    $("bmr").textContent = r.bmr.toLocaleString();
-    show(2);
+    // calories are set by the dietitian after she reviews the client
+    show(3);
   });
 
   // Bank transfer step
@@ -204,10 +214,11 @@ if ($("info-form")) {
         id: user.id, ...client, package: chosen,
         receipt_path: path, receipt_type: receipt.type, receipt_sender: $("sender").value.trim(),
         receipt_amount: PACKAGES[chosen].price, receipt_date: new Date().toISOString(),
-        progress: {}, inbody_requested: true
+        progress: {}, inbody_requested: false
       };
       const existing = await DB.select("profiles", "select=id&id=eq." + user.id);
       if (existing.length) await DB.update("profiles", user.id, row); else await DB.insert("profiles", row);
+      if (ibData) await DB.insert("inbody", { user_id: user.id, weight: client.weight, fat: ibData.fat, muscle: ibData.muscle, bmr: ibData.bmr });
       show(5);
     } catch (e) {
       $("err-4").textContent = friendlyError(e);
@@ -220,7 +231,7 @@ if ($("info-form")) {
       (LANG === "ar" ? "طلب جديد — " : "New client — ") + t(PACKAGES[chosen].nameKey) + " (" + PACKAGES[chosen].price + " " + t("sar") + ")",
       t("f_name") + ": " + client.name, t("f_phone") + ": " + client.phone,
       t("f_age") + ": " + client.age + " | " + t("f_height") + ": " + client.height + " | " + t("f_weight") + ": " + client.weight,
-      t("f_goal") + ": " + t("goal_" + client.goal), t("res_title") + ": " + client.kcal + " kcal",
+      t("f_goal") + ": " + t("goal_" + client.goal),
       client.health ? t("f_health") + ": " + client.health : "", client.food ? t("f_food") + ": " + client.food : ""
     ].filter(Boolean).join("\n");
     $("wa-send").href = waLink(WHATSAPP_NUMBER, msg);
@@ -268,7 +279,9 @@ if ($("login-form")) {
     $("v-wait").hidden = !!c.paid;
     $("wait-rejected").hidden = c.pay_status !== "rejected";
     $("wait-pending").hidden = c.pay_status === "rejected";
-    $("v-build").hidden = !(c.paid && plans.length < 7);
+    const noKcal = c.paid && !c.kcal;
+    $("v-kcal-wait").hidden = !noKcal;
+    $("v-build").hidden = !(c.paid && c.kcal && plans.length < 7);
     $("v-pick").hidden = !(c.paid && plans.length >= 7 && !st);
     $("v-plan").hidden = !(c.paid && st);
     $("workout-card").hidden = !(c.paid && (c.workout_link || (PACKAGES[c.package] && PACKAGES[c.package].workout)));
@@ -628,7 +641,7 @@ if ($("admin-login")) {
           : '<button class="btn small" data-open="' + esc(c.id) + '">' + esc(t("ad_view_receipt")) + "</button>";
         const ib = c.inbody_requested ? '<span class="status-pill">' + esc(t("ib_requested")) + "</span>" : "✓";
         const pk = PACKAGES[c.package] ? t(PACKAGES[c.package].nameKey) : "—";
-        return "<tr><td>" + esc(c.name) + "</td><td>" + (c.kcal || "—") + "</td><td>" + esc(pk) + "</td><td>" + pay + "</td><td>" + Math.min(7, (c.plans || []).length) + " / 7</td><td>" + todayText(c) + "</td><td>" + ib + '</td><td><button class="btn outline small" data-open="' + esc(c.id) + '">' + esc(t("ad_open")) + "</button></td></tr>";
+        return "<tr><td>" + esc(c.name) + "</td><td>" + (c.kcal || '<span class="status-pill">' + esc(t("ad_need_kcal")) + "</span>") + "</td><td>" + esc(pk) + "</td><td>" + pay + "</td><td>" + Math.min(7, (c.plans || []).length) + " / 7</td><td>" + todayText(c) + "</td><td>" + ib + '</td><td><button class="btn outline small" data-open="' + esc(c.id) + '">' + esc(t("ad_open")) + "</button></td></tr>";
       }).join("");
     document.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => { openClient = b.dataset.open; renderClients(); }));
     updateBadge();
@@ -647,6 +660,9 @@ if ($("admin-login")) {
     $("wa-client").href = waLink(saudiNumber(c.phone), (LANG === "ar" ? "مرحباً " : "Hi ") + (c.name || "").split(" ")[0] + "، " + t("ib_alert_text"));
     $("cd-ib-pending").hidden = !c.inbody_requested;
     $("cd-workout").value = c.workout_link || "";
+    $("cd-kcal").value = c.kcal || "";
+    $("cd-kcal-msg").textContent = "";
+    $("cd-kcal-need").hidden = !!c.kcal;
     $("cd-workout-msg").textContent = "";
 
     // the client's 7 days + daily history
@@ -687,8 +703,8 @@ if ($("admin-login")) {
       const ibs = await DB.select("inbody", "select=*&user_id=eq." + c.id + "&order=date.desc");
       $("cd-ib-last").textContent = fmtDate(ibs.length ? ibs[0].date : null);
       $("cd-ib-none").hidden = ibs.length > 0;
-      $("cd-ib-table").innerHTML = ibs.length ? "<tr><th>" + ["", t("ib_weight"), t("ib_fat"), t("ib_muscle")].map(esc).join("</th><th>") + "</th></tr>" +
-        ibs.map(i => "<tr><td>" + esc(fmtDate(i.date)) + "</td><td>" + (i.weight ?? "—") + "</td><td>" + (i.fat ?? "—") + "</td><td>" + (i.muscle ?? "—") + "</td></tr>").join("") : "";
+      $("cd-ib-table").innerHTML = ibs.length ? "<tr><th>" + ["", t("ib_weight"), t("ib_fat"), t("ib_muscle"), "BMR"].map(esc).join("</th><th>") + "</th></tr>" +
+        ibs.map(i => "<tr><td>" + esc(fmtDate(i.date)) + "</td><td>" + (i.weight ?? "—") + "</td><td>" + (i.fat ?? "—") + "</td><td>" + (i.muscle ?? "—") + "</td><td>" + (i.bmr ?? "—") + "</td></tr>").join("") : "";
     } catch (e) {}
   }
   async function changeClient(changes, text) {
@@ -705,6 +721,12 @@ if ($("admin-login")) {
     await changeClient({ workout_link: v || null });
     $("cd-workout-msg").textContent = t("ad_saved_ok");
   });
+  $("cd-kcal-save").addEventListener("click", async () => {
+    const v = parseInt($("cd-kcal").value, 10);
+    if (!v || v < 800 || v > 5000) { $("cd-kcal-msg").textContent = t("err_kcal"); return; }
+    await changeClient({ kcal: v });
+    $("cd-kcal-msg").textContent = t("ad_saved_ok");
+  });
   let resetArmed = false;
   $("cd-reset").addEventListener("click", async () => {
     if (!resetArmed) { resetArmed = true; $("cd-reset").textContent = t("ad_confirm_delete"); return; }
@@ -714,7 +736,7 @@ if ($("admin-login")) {
   $("refresh-btn").addEventListener("click", async () => { busy($("refresh-btn"), true); await Promise.all([loadClients(), loadSchedules(), loadRecipes()]); renderAll(); busy($("refresh-btn"), false); });
 
   function updateBadge() {
-    const n = CLIENTS.filter(c => !c.paid && c.pay_status === "pending" && c.receipt_path).length;
+    const n = CLIENTS.filter(c => (!c.paid && c.pay_status === "pending" && c.receipt_path) || (c.paid && !c.kcal)).length;
     document.querySelector('.tab[data-tab="clients"]').textContent = t("tab_clients") + (n ? " (" + n + ")" : "");
   }
   function renderAll() { renderSchedules(); renderRecipes(); renderClients(); renderDayEditor(); updateBadge(); }

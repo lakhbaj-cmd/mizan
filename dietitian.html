@@ -131,6 +131,14 @@
           </div>
           <div class="card" style="margin-top:12px">
             <h3 id="cd-name" style="margin-top:0"></h3>
+            <div class="kcal-set">
+              <label for="cd-kcal" data-i18n="ad_set_kcal"></label>
+              <span class="status-pill" id="cd-kcal-need" data-i18n="ad_need_kcal"></span>
+              <div class="btn-row" style="justify-content:flex-start;align-items:center;margin-top:6px">
+                <input id="cd-kcal" type="number" min="800" max="5000" step="10" style="max-width:140px"> <span class="muted" data-i18n="kcal_short"></span>
+                <button class="btn small" id="cd-kcal-save" data-i18n="ad_save"></button><span class="muted" id="cd-kcal-msg"></span>
+              </div>
+            </div>
             <div class="info-grid" id="cd-info"></div>
           </div>
           <div class="card" style="margin-top:12px">

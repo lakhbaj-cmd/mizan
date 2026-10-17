@@ -1,4 +1,5 @@
 /* Mizan Nutrition styles */
+[hidden] { display: none !important; }
 :root {
   /* Layout: single centered column, sticky header, cards only for steps, packages and portal tiles */
   --green: #4f7a5f;
@@ -270,3 +271,9 @@ details p { margin: 6px 0 0; color: var(--text); }
 .demo-bar { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; background: var(--accent); color: var(--on-green); font-weight: 700; font-size: .9rem; padding: 6px max(16px, env(safe-area-inset-right, 0px)) 6px max(16px, env(safe-area-inset-left, 0px)); }
 .demo-bar button { background: var(--card); color: var(--text); border: none; border-radius: 16px; padding: 4px 12px; font: inherit; font-size: .85rem; cursor: pointer; }
 .demo-btn { width: 100%; margin-top: 12px; }
+.ib-choice { display: grid; gap: 6px; }
+.method-pill { display: inline-block; font-size: .85rem; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: var(--line); color: var(--muted); }
+.method-pill.is-ib { background: var(--green-soft); color: var(--green-dark); }
+.kcal-set { background: var(--green-soft); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+.kcal-set label { display: block; }
+#cd-kcal { font-size: 1.1rem; font-weight: 700; }

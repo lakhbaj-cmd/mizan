@@ -19,8 +19,8 @@ const I18N = {
     how_title: "How it works",
     how_1_t: "Tell us about you",
     how_1_d: "Fill a short form: your age, height, weight, activity, goal and any allergies.",
-    how_2_t: "Get your calories",
-    how_2_d: "The site estimates your daily calories. Your dietitian reviews and adjusts it.",
+    how_2_t: "Your dietitian sets your calories",
+    how_2_d: "Your dietitian reviews your info (and InBody, if you have it) and calculates your daily calories herself.",
     how_3_t: "Choose a package",
     how_3_d: "Pick a nutrition plan, with or without a workout plan, and pay online.",
     how_4_t: "Get your plan",
@@ -41,7 +41,7 @@ const I18N = {
     about_title: "About your dietitian",
     about_text: "[Dietitian name] is a qualified dietitian who helps clients lose weight, gain weight, or simply eat healthier without giving up the food they love. Every plan is made by hand for one person, not copied from a template.",
 
-    footer_note: "Calorie numbers on this site are starting estimates. Your dietitian reviews every plan. This site does not replace medical advice.",
+    footer_note: "Your calories and plan are set by your dietitian. This site does not replace medical advice.",
 
     // Start page
     st_title: "Start your plan",
@@ -110,7 +110,7 @@ const I18N = {
     st_bank_review: "Waiting for transfer confirmation",
     pt_package: "Your package",
     pt_calories: "Your calorie target",
-    pt_estimated: "(estimate — your dietitian will confirm)",
+    pt_estimated: "",
     pt_plan: "Your meal plan",
     pt_plan_empty: "Your dietitian is preparing your plan. It will appear here.",
     pt_week: "Sample week schedule",
@@ -147,7 +147,7 @@ const I18N = {
     pt_wait_bank: "Once your dietitian confirms your transfer, the schedules for your calories will appear here.",
     pt_day1: "Day 1 preview",
     ad_confirm_pay: "Confirm transfer", ad_paid: "Paid", ad_unpaid: "Waiting for transfer", ad_matching: "matching clients", ad_client_choice: "Client's choice",
-    rule_title: "Program rule: InBody", rule_text: "Every client must do an InBody body-composition test before starting, and again whenever the dietitian asks (usually every 2–4 weeks). Your plan is adjusted from your InBody results.",
+    rule_title: "InBody (optional)", rule_text: "InBody is optional. If you do an InBody test and enter your results when you sign up, your dietitian can calculate your calories more accurately.",
     rule_agree: "I agree to do an InBody test before I start and whenever my dietitian asks.", err_rule: "Please agree to the InBody rule to continue.",
     ib_alert_title: "Time for your InBody test", ib_alert_text: "Your dietitian asked you to do an InBody test. Do it at any clinic or gym with an InBody device, then enter your results.",
     ib_weight: "Weight (kg)", ib_fat: "Body fat (%)", ib_muscle: "Muscle mass (kg)", ib_submit: "I did my InBody ✓", ib_thanks: "Thanks! Your dietitian can see your results.",
@@ -189,6 +189,12 @@ const I18N = {
     ad_one_day: "One schedule = one day: breakfast, 2 snacks, lunch and dinner.", h_date: "Date", h_plan: "Plan", h_meals: "meals",
     err_link: "Paste a full link that starts with https://",
     demo_on: "Demo mode — sample data, nothing is saved for real", demo_exit: "Exit demo", demo_try_client: "Try the demo (sample client)", demo_try_pro: "Try the demo (sample clients)",
+    f_ib_choice: "InBody test (optional)", ib_note: "An InBody test measures your body fat and muscle, so your dietitian can calculate your calories more accurately. You can do it at most gyms and clinics.",
+    ib_with: "I have InBody results (more accurate)", ib_without: "Without InBody", f_ib_fat: "Body fat (%)", f_ib_muscle: "Muscle mass (kg, optional)",
+    f_ib_bmr: "BMR from the report (optional)", err_ib_fat: "Enter your body fat % (or the BMR) from your InBody report, or choose Without InBody.",
+    res_method_ib: "Calculated from your InBody results (more accurate)", res_method_std: "Calculated from your height, weight and age",
+    kw_pill: "Payment confirmed ✓", kw_text: "Your dietitian is reviewing your info and calculating your calories. Once she adds them, the days that fit your calories will appear here.",
+    ad_set_kcal: "Client's daily calories (you set them)", ad_need_kcal: "Needs calories", err_kcal: "Enter a number between 800 and 5000.",
     soon: "Coming soon"
   },
 
@@ -208,8 +214,8 @@ const I18N = {
     how_title: "كيف تشتغل الخدمة",
     how_1_t: "عرّفينا عليك",
     how_1_d: "عبّي نموذج قصير: عمرك، طولك، وزنك، نشاطك، هدفك وأي حساسية.",
-    how_2_t: "اعرف سعراتك",
-    how_2_d: "الموقع يحسب سعراتك اليومية بشكل تقريبي، والأخصائية تراجعها وتعدّلها.",
+    how_2_t: "الأخصائية تحدد سعراتك",
+    how_2_d: "الأخصائية تراجع معلوماتك (ونتائج InBody لو عندك) وتحسب سعراتك اليومية بنفسها.",
     how_3_t: "اختر الباقة",
     how_3_d: "اختر خطة تغذية مع أو بدون جدول تمارين، وادفع أونلاين.",
     how_4_t: "استلم خطتك",
@@ -230,7 +236,7 @@ const I18N = {
     about_title: "عن أخصائية التغذية",
     about_text: "[اسم الأخصائية] أخصائية تغذية تساعد عملاءها في نزول الوزن أو زيادته أو الأكل الصحي بدون ما يتركون الأكل اللي يحبونه. كل خطة تنسوّى لشخص واحد، مو منسوخة من قالب.",
 
-    footer_note: "أرقام السعرات في الموقع تقديرية للبداية، والأخصائية تراجع كل خطة. الموقع لا يغني عن الاستشارة الطبية.",
+    footer_note: "سعراتك وخطتك تحددها الأخصائية. الموقع لا يغني عن الاستشارة الطبية.",
 
     st_title: "ابدأ خطتك",
     st_step1: "معلوماتك",
@@ -297,7 +303,7 @@ const I18N = {
     st_bank_review: "بانتظار تأكيد التحويل",
     pt_package: "باقتك",
     pt_calories: "سعراتك المستهدفة",
-    pt_estimated: "(تقريبية — الأخصائية بتأكدها)",
+    pt_estimated: "",
     pt_plan: "خطة الأكل",
     pt_plan_empty: "الأخصائية تجهّز خطتك، وبتطلع هنا.",
     pt_week: "مثال لجدول الأسبوع",
@@ -334,7 +340,7 @@ const I18N = {
     pt_wait_bank: "أول ما الأخصائية تأكد التحويل، بتطلع لك الجداول اللي على سعراتك.",
     pt_day1: "اليوم الأول",
     ad_confirm_pay: "تأكيد التحويل", ad_paid: "مدفوع", ad_unpaid: "بانتظار التحويل", ad_matching: "عملاء سعراتهم مناسبة", ad_client_choice: "اختيار العميل",
-    rule_title: "قاعدة البرنامج: InBody", rule_text: "كل عميل لازم يسوي فحص InBody (تحليل مكونات الجسم) قبل ما يبدأ، ويعيده كل ما تطلب الأخصائية (عادةً كل ٢–٤ أسابيع). الخطة تتعدّل على حسب نتائجك.",
+    rule_title: "InBody (اختياري)", rule_text: "فحص InBody اختياري. لو سويته وكتبت نتايجك وقت التسجيل، تقدر الأخصائية تحسب سعراتك بشكل أدق.",
     rule_agree: "أوافق أسوي فحص InBody قبل ما أبدأ، وكل ما تطلب مني الأخصائية.", err_rule: "فضلاً وافق على قاعدة InBody عشان تكمل.",
     ib_alert_title: "حان وقت فحص InBody", ib_alert_text: "الأخصائية طلبت منك تسوي فحص InBody. سوّه في أي عيادة أو نادي فيه جهاز InBody، وبعدها اكتب نتائجك.",
     ib_weight: "الوزن (كجم)", ib_fat: "نسبة الدهون (٪)", ib_muscle: "الكتلة العضلية (كجم)", ib_submit: "سويت الـ InBody ✓", ib_thanks: "شكراً! الأخصائية تقدر تشوف نتائجك.",
@@ -376,6 +382,12 @@ const I18N = {
     ad_one_day: "الجدول الواحد = يوم واحد: فطور، سناكين، غداء وعشاء.", h_date: "التاريخ", h_plan: "الجدول", h_meals: "وجبات",
     err_link: "حطي رابط كامل يبدأ بـ https://",
     demo_on: "نسخة تجريبية — بيانات وهمية، ما ينحفظ شي حقيقي", demo_exit: "خروج من التجربة", demo_try_client: "جرّب النسخة التجريبية (عميل وهمي)", demo_try_pro: "جربي النسخة التجريبية (عملاء وهميين)",
+    f_ib_choice: "فحص InBody (اختياري)", ib_note: "فحص InBody يقيس نسبة الدهون والعضلات، فتقدر الأخصائية تحسب سعراتك بشكل أدق. تقدر تسويه في أغلب الأندية والعيادات.",
+    ib_with: "عندي نتائج InBody (أدق)", ib_without: "بدون InBody", f_ib_fat: "نسبة الدهون (٪)", f_ib_muscle: "الكتلة العضلية (كجم، اختياري)",
+    f_ib_bmr: "معدل الحرق BMR من التقرير (اختياري)", err_ib_fat: "اكتب نسبة الدهون (أو BMR) من تقرير InBody، أو اختر بدون InBody.",
+    res_method_ib: "محسوبة من نتائج InBody (أدق)", res_method_std: "محسوبة من طولك ووزنك وعمرك",
+    kw_pill: "تم تأكيد الدفع ✓", kw_text: "الأخصائية تراجع معلوماتك وتحسب سعراتك. أول ما تضيفها، بتطلع لك الأيام اللي على سعراتك هنا.",
+    ad_set_kcal: "السعرات اليومية للعميل (أنتِ تحددينها)", ad_need_kcal: "يحتاج سعرات", err_kcal: "اكتبي رقم بين ٨٠٠ و٥٠٠٠.",
     soon: "قريباً"
   }
 };
