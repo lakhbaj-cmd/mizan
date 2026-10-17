@@ -71,16 +71,17 @@
 
         <div class="card" id="sched-editor" hidden>
           <h3 data-i18n="ad_new_sched" style="margin-top:0"></h3>
+          <p class="muted" style="margin-top:0" data-i18n="ad_one_day"></p>
           <div class="form-grid">
-            <div class="field"><label for="s-name" data-i18n="ad_sched_name"></label><input id="s-name" placeholder="1500 – Week 1"></div>
-            <div class="field"><label for="s-kcal" data-i18n="ad_sched_kcal"></label><input id="s-kcal" type="number" min="1000" max="4000" step="50" value="1500"></div>
-            <div class="field"><label for="s-days" data-i18n="ad_sched_days"></label><input id="s-days" type="number" min="1" max="14" value="7"></div>
+            <div class="field"><label for="s-name" data-i18n="ad_sched_name"></label><input id="s-name" placeholder="يوم متوازن ١٣٠٠"></div>
+            <div class="field"><label for="s-kcal" data-i18n="ad_sched_kcal"></label><input id="s-kcal" type="number" min="800" max="4000" step="50" value="1300"></div>
           </div>
           <div class="btn-row" style="justify-content:flex-start;margin:14px 0">
             <button class="btn outline small" id="autofill-btn" data-i18n="ad_autofill"></button>
           </div>
-          <p class="muted" style="font-size:.9rem" data-i18n="ad_portion_note"></p>
-          <div id="days-editor" class="days-editor"></div>
+          <div class="day-box"><div class="day-head"><b data-i18n="ad_day_total"></b><span class="muted" id="day-total"></span></div>
+            <div class="form-grid" id="day-editor"></div></div>
+          <p class="muted" style="font-size:.85rem" data-i18n="ad_portion_note"></p>
           <p class="error" id="sched-err"></p>
           <div class="actions">
             <button class="btn outline" id="cancel-sched" data-i18n="ad_cancel"></button>
@@ -132,8 +133,16 @@
             <div class="info-grid" id="cd-info"></div>
           </div>
           <div class="card" style="margin-top:12px">
-            <h3 style="margin-top:0" data-i18n="ad_c_progress"></h3>
+            <h3 style="margin-top:0" data-i18n="ad_plans"></h3>
             <div id="cd-progress"></div>
+            <button class="btn outline small" id="cd-reset" style="margin-top:10px" data-i18n="ad_reset_plans"></button>
+          </div>
+          <div class="card" style="margin-top:12px">
+            <h3 style="margin-top:0" data-i18n="wk_title"></h3>
+            <div class="field"><label for="cd-workout" data-i18n="ad_workout"></label><input id="cd-workout" type="url" dir="ltr" placeholder="https://..."></div>
+            <div class="btn-row" style="justify-content:flex-start;margin-top:10px;align-items:center">
+              <button class="btn small" id="cd-workout-save" data-i18n="ad_save"></button><span class="muted" id="cd-workout-msg"></span>
+            </div>
           </div>
           <div class="card" style="margin-top:12px">
             <h3 style="margin-top:0">InBody</h3>

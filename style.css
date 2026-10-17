@@ -259,3 +259,11 @@ details p { margin: 6px 0 0; color: var(--text); }
 .progress-table td { font-size: .8rem; }
 .progress-table td.is-done { background: var(--green-soft); color: var(--text); }
 .progress-table td.is-skip { color: var(--muted); text-decoration: line-through; }
+.kcal-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; background: var(--green-soft); border-radius: 12px; padding: 10px; font-variant-numeric: tabular-nums; }
+.kcal-row b { display: block; font-size: 1.2rem; color: var(--green-dark); }
+.chosen-days li.empty { background: transparent; border: 1px dashed var(--line); }
+.day-num { width: 28px; height: 28px; border-radius: 50%; background: var(--green); color: var(--on-green); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0; }
+.mini-plans { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.mini-plan { border: 1px solid var(--line); border-radius: 12px; padding: 10px; font-size: .9rem; }
+.mini-plan.is-today { border: 2px solid var(--green); background: var(--green-soft); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }

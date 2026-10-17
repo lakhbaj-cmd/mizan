@@ -10,7 +10,6 @@ const PACKAGES = {
   basic: { price: 250, nameKey: "pk_basic_name", workout: false },
   plus:  { price: 300, nameKey: "pk_plus_name",  workout: true  }
 };
-const MEALS = ["b", "l", "d", "s"]; // breakfast, lunch, dinner, snack
 
 // ===== Small helpers =====
 const $ = id => document.getElementById(id);
@@ -69,38 +68,47 @@ function copyText(text, btn) {
   try { navigator.clipboard.writeText(text).then(done, () => {}); } catch (e) {}
 }
 
-// ===== Recipes & schedules (cached after loading) =====
-let SCHEDULES = [];
+// ===== Recipes & day plans (cached after loading) =====
+// A day has 5 meals: breakfast, snack 1, lunch, snack 2, dinner
+const SLOTS = ["b", "s1", "l", "s2", "d"];
+const SLOT_MEAL = { b: "b", s1: "s", l: "l", s2: "s", d: "d" };   // which recipe type fits each slot
+let SCHEDULES = [];      // ready one-day plans made by the dietitian
 let CUSTOM_RECIPES = [];
-async function loadSchedules() { SCHEDULES = await DB.select("schedules", "select=*&order=created_at.asc"); return SCHEDULES; }
+async function loadSchedules() { SCHEDULES = await DB.select("schedules", "select=*&order=kcal.asc"); return SCHEDULES; }
 async function loadRecipes() { CUSTOM_RECIPES = (await DB.select("recipes", "select=*&order=created_at.asc")).map(r => ({ ...r, custom: true })); }
 function allRecipes() { return (typeof BUILTIN_RECIPES !== "undefined" ? BUILTIN_RECIPES : []).concat(CUSTOM_RECIPES); }
 function recipeById(id) { return allRecipes().find(r => r.id === id); }
 function rText(r, field) { const v = r[field]; return v == null ? "" : typeof v === "string" ? v : (v[LANG] || v.en || ""); }
-function scheduleById(id) { return SCHEDULES.find(s => s.id === id); }
-
-function dayTotal(day) { return MEALS.reduce((sum, m) => sum + ((recipeById(day[m]) || {}).kcal || 0), 0); }
-function portionFactor(sched, day) {
-  const total = dayTotal(day);
-  if (!total) return 1;
-  return Math.min(2, Math.max(0.5, Math.round((sched.kcal / total) * 4) / 4));
+function recipesFor(slot) { return allRecipes().filter(r => r.meal === SLOT_MEAL[slot]); }
+function slotLabel(slot) { return t("meal_" + slot); }
+function tplMeals(s) { return (s.days && s.days[0]) || {}; }
+function mealsTotal(meals) { return SLOTS.reduce((sum, k) => sum + ((recipeById(meals[k]) || {}).kcal || 0), 0); }
+// Portion factor so the day reaches the calorie target (rounded to ¼, between ½ and 2)
+function portionFactor(target, meals) {
+  const total = mealsTotal(meals);
+  if (!total || !target) return 1;
+  return Math.min(2, Math.max(0.5, Math.round((target / total) * 4) / 4));
 }
-function matchingSchedules(kcal) {
+function matchingTemplates(kcal) {
   return SCHEDULES.filter(s => Math.abs(s.kcal - kcal) <= MATCH_RANGE).sort((a, b) => Math.abs(a.kcal - kcal) - Math.abs(b.kcal - kcal));
 }
-function slotKey(dayIndex, meal) { return dayIndex + "-" + meal; }
-function planState(c, sched) {
-  const prog = c.progress || {};
-  const slots = [];
-  sched.days.forEach((day, di) => MEALS.forEach(m => slots.push({ di, m, key: slotKey(di, m), recipe: recipeById(day[m]), status: prog[slotKey(di, m)] })));
+function mealNamesHTML(meals) {
+  return "<ul class='mini-meals'>" + SLOTS.map(k => { const r = recipeById(meals[k]); return r ? "<li><b>" + esc(slotLabel(k)) + ":</b> " + esc(rText(r, "name")) + "</li>" : ""; }).join("") + "</ul>";
+}
+function todayStr() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+// Where the client is today
+function dayState(c) {
+  const today = c.today && c.today.date === todayStr() ? c.today : null;
+  const plan = today ? (c.plans || [])[today.plan] : null;
+  if (!plan) return null;
+  const prog = today.progress || {};
+  const factor = portionFactor(plan.kcal, plan.meals);
+  const slots = SLOTS.map(k => ({ k, recipe: recipeById(plan.meals[k]), status: prog[k] }));
   const next = slots.find(s => !s.status);
-  const doneCount = slots.filter(s => s.status === "done").length;
+  const done = slots.filter(s => s.status === "done").length;
   const handled = slots.filter(s => s.status).length;
-  const dayIndex = next ? next.di : sched.days.length - 1;
-  const factor = portionFactor(sched, sched.days[dayIndex]);
-  const todaySlots = slots.filter(s => s.di === dayIndex);
-  const todayKcal = todaySlots.filter(s => s.status === "done").reduce((sum, s) => sum + Math.round((s.recipe ? s.recipe.kcal : 0) * factor), 0);
-  return { slots, next, doneCount, handled, total: slots.length, dayIndex, factor, todaySlots, todayKcal };
+  const kcal = slots.filter(s => s.status === "done").reduce((sum, s) => sum + Math.round((s.recipe ? s.recipe.kcal : 0) * factor), 0);
+  return { today, plan, factor, slots, next, done, handled, kcal };
 }
 
 // ===== Calories (Mifflin-St Jeor) =====
@@ -225,6 +233,12 @@ if ($("info-form")) {
 if ($("login-form")) {
   const statusIcon = { done: "✅", skip: "⏭️" };
   let me = null;
+  let tab = "ready";
+  let draft = [];          // the 7 days being chosen (kept on this device until saved)
+  let custom = {};         // the day the client is building
+  const draftKey = () => "mizan_draft_" + (me ? me.id : "");
+  const loadDraft = () => { try { draft = JSON.parse(localStorage.getItem(draftKey()) || "[]"); } catch (e) { draft = []; } };
+  const saveDraft = () => { try { localStorage.setItem(draftKey(), JSON.stringify(draft)); } catch (e) {} };
 
   async function refresh() {
     const u = await DB.user();
@@ -235,14 +249,12 @@ if ($("login-form")) {
       me = rows[0] || null;
       if (me && me.role === "admin") { location.href = "dietitian.html"; return; }
       await Promise.all([loadSchedules(), loadRecipes()]);
+      loadDraft();
     } catch (e) { me = null; $("login-err").textContent = friendlyError(e); }
     $("loading").hidden = true;
     render();
   }
-  async function updateMe(changes) {
-    me = await DB.update("profiles", me.id, changes);
-    render();
-  }
+  async function updateMe(changes) { me = await DB.update("profiles", me.id, changes); render(); }
 
   function render() {
     const c = me;
@@ -251,48 +263,131 @@ if ($("login-form")) {
     if (!c) return;
     $("d-name").textContent = (c.name || "").split(" ")[0];
     $("ib-alert").hidden = !c.inbody_requested;
-    const sched = c.schedule_id && scheduleById(c.schedule_id);
+    const plans = c.plans || [];
+    const st = c.paid && plans.length >= 7 ? dayState(c) : null;
     $("v-wait").hidden = !!c.paid;
     $("wait-rejected").hidden = c.pay_status !== "rejected";
     $("wait-pending").hidden = c.pay_status === "rejected";
-    $("v-choose").hidden = !(c.paid && !sched);
-    $("v-plan").hidden = !(c.paid && sched);
-    if (c.paid && !sched) renderChoose(c);
-    if (c.paid && sched) renderPlan(c, sched);
+    $("v-build").hidden = !(c.paid && plans.length < 7);
+    $("v-pick").hidden = !(c.paid && plans.length >= 7 && !st);
+    $("v-plan").hidden = !(c.paid && st);
+    $("workout-card").hidden = !(c.paid && (c.workout_link || (PACKAGES[c.package] && PACKAGES[c.package].workout)));
+    renderWorkout(c);
+    if (!$("v-build").hidden) renderBuild(c);
+    if (!$("v-pick").hidden) renderPick(c);
+    if (st) renderToday(c, st);
   }
 
-  function renderChoose(c) {
-    $("c-kcal").textContent = (c.kcal || 0).toLocaleString();
-    const list = matchingSchedules(c.kcal);
-    $("no-match").hidden = list.length > 0;
-    $("sched-options").innerHTML = list.map(s => {
-      const d1 = s.days[0];
-      const meals = MEALS.map(m => { const r = recipeById(d1[m]); return r ? "<li><b>" + esc(t("meal_" + m)) + ":</b> " + esc(rText(r, "name")) + "</li>" : ""; }).join("");
-      return '<div class="card sched-card"><h3>' + esc(s.name) + '</h3><p class="stat">' + s.kcal.toLocaleString() + " <small>" + esc(t("kcal_short")) + "</small></p>" +
-        '<p class="muted">' + s.days.length + " " + esc(t("ad_days")) + "</p><p class='small-label muted'>" + esc(t("pt_day1")) + "</p><ul class='mini-meals'>" + meals + "</ul>" +
-        '<button class="btn" data-pick="' + esc(s.id) + '">' + esc(t("pt_start_sched")) + "</button></div>";
+  function renderWorkout(c) {
+    const link = c.workout_link && /^https?:\/\//i.test(c.workout_link) ? c.workout_link : "";
+    $("wk-link").hidden = !link;
+    if (link) $("wk-link").href = link;
+    $("wk-none").hidden = !!link;
+  }
+
+  // ---------- Step 1: choose 7 days ----------
+  function renderBuild(c) {
+    $("b-count").textContent = draft.length;
+    $("b-kcal").textContent = (c.kcal || 0).toLocaleString();
+    document.querySelectorAll("[data-btab]").forEach(b => b.classList.toggle("active", b.dataset.btab === tab));
+    $("b-ready").hidden = tab !== "ready";
+    $("b-custom").hidden = tab !== "custom";
+    const full = draft.length >= 7;
+
+    // ready plans that match the client's calories — food names only
+    const list = matchingTemplates(c.kcal);
+    $("b-no-ready").hidden = list.length > 0;
+    $("b-ready-list").innerHTML = list.map(s =>
+      '<div class="card sched-card"><h3>' + esc(s.name) + '</h3><p class="stat">' + s.kcal.toLocaleString() + " <small>" + esc(t("kcal_short")) + "</small></p>" +
+      mealNamesHTML(tplMeals(s)) + '<button class="btn small" data-addtpl="' + esc(s.id) + '"' + (full ? " disabled" : "") + ">" + esc(t("b_add")) + "</button></div>").join("");
+    document.querySelectorAll("[data-addtpl]").forEach(b => b.addEventListener("click", () => {
+      const s = SCHEDULES.find(x => x.id === b.dataset.addtpl);
+      if (!s || draft.length >= 7) return;
+      draft.push({ name: s.name, kcal: s.kcal, meals: { ...tplMeals(s) }, source: "ready" });
+      saveDraft(); renderBuild(c);
+    }));
+
+    renderCustom(c);
+
+    // the 7 chosen days
+    let rows = "";
+    for (let i = 0; i < 7; i++) {
+      const p = draft[i];
+      rows += '<li class="' + (p ? "" : "empty") + '"><span class="day-num">' + (i + 1) + "</span><span class='grow'>" +
+        (p ? "<b>" + esc(p.name) + "</b> · " + p.kcal + " " + esc(t("kcal_short")) + "<br><small class='muted'>" + SLOTS.map(k => { const r = recipeById(p.meals[k]); return r ? esc(rText(r, "name")) : ""; }).filter(Boolean).join(" · ") + "</small>" : "<span class='muted'>" + esc(t("b_empty_slot")) + "</span>") +
+        "</span>" + (p ? '<button class="install-close" data-rm="' + i + '" aria-label="Remove">×</button>' : "") + "</li>";
+    }
+    $("b-chosen").innerHTML = rows;
+    document.querySelectorAll("[data-rm]").forEach(b => b.addEventListener("click", () => { draft.splice(+b.dataset.rm, 1); saveDraft(); renderBuild(c); }));
+    $("b-save").disabled = !full;
+  }
+
+  // build-your-own: each list only shows food that still fits the calories
+  function renderCustom(c) {
+    const target = c.kcal || 0;
+    const chosenSum = SLOTS.reduce((s, k) => s + ((recipeById(custom[k]) || {}).kcal || 0), 0);
+    const minOf = k => Math.min(...recipesFor(k).map(r => r.kcal), Infinity);
+    $("c-target").textContent = target.toLocaleString();
+    $("c-total").textContent = chosenSum.toLocaleString();
+    $("c-left").textContent = Math.max(0, target - chosenSum).toLocaleString();
+    $("c-slots").innerHTML = SLOTS.map(k => {
+      const others = SLOTS.filter(x => x !== k);
+      const othersChosen = others.reduce((s, x) => s + ((recipeById(custom[x]) || {}).kcal || 0), 0);
+      const othersMin = others.filter(x => !custom[x]).reduce((s, x) => s + (isFinite(minOf(x)) ? minOf(x) : 0), 0);
+      const fits = recipesFor(k).filter(r => r.kcal + othersChosen + othersMin <= target + 50);
+      const opts = fits.map(r => '<option value="' + esc(r.id) + '"' + (custom[k] === r.id ? " selected" : "") + ">" + esc(rText(r, "name")) + " (" + r.kcal + ")</option>").join("");
+      return '<div class="field"><label for="cs-' + k + '">' + esc(slotLabel(k)) + '</label><select id="cs-' + k + '" data-cslot="' + k + '"><option value="">' + esc(fits.length ? t("b_choose") : t("b_nothing_fits")) + "</option>" + opts + "</select></div>";
     }).join("");
-    document.querySelectorAll("[data-pick]").forEach(b => b.addEventListener("click", async () => {
-      busy(b, true); try { await updateMe({ schedule_id: b.dataset.pick, progress: {} }); } finally { busy(b, false); }
+    document.querySelectorAll("[data-cslot]").forEach(s => s.addEventListener("change", () => { custom[s.dataset.cslot] = s.value; renderCustom(c); }));
+    const complete = SLOTS.every(k => custom[k]);
+    $("c-add").disabled = !complete || draft.length >= 7;
+  }
+  $("c-add").addEventListener("click", () => {
+    if (draft.length >= 7 || !SLOTS.every(k => custom[k])) return;
+    const n = draft.filter(p => p.source === "custom").length + 1;
+    draft.push({ name: t("b_custom_name") + " " + n, kcal: me.kcal, meals: { ...custom }, source: "custom" });
+    custom = {}; saveDraft(); renderBuild(me);
+  });
+  document.querySelectorAll("[data-btab]").forEach(b => b.addEventListener("click", () => { tab = b.dataset.btab; renderBuild(me); }));
+  $("b-save").addEventListener("click", async () => {
+    if (draft.length < 7) return;
+    busy($("b-save"), true);
+    try { await updateMe({ plans: draft.slice(0, 7) }); draft = []; saveDraft(); }
+    catch (e) { $("b-err").textContent = friendlyError(e); } finally { busy($("b-save"), false); }
+  });
+
+  // ---------- Step 2: every day, pick one of the 7 ----------
+  function renderPick(c) {
+    $("pick-list").innerHTML = c.plans.slice(0, 7).map((p, i) =>
+      '<div class="card sched-card"><p class="eyebrow">' + esc(t("pt_day")) + " " + (i + 1) + "</p><h3>" + esc(p.name) + '</h3><p class="stat">' + p.kcal.toLocaleString() + " <small>" + esc(t("kcal_short")) + "</small></p>" +
+      mealNamesHTML(p.meals) + '<button class="btn small" data-pickday="' + i + '">' + esc(t("p_start")) + "</button></div>").join("");
+    document.querySelectorAll("[data-pickday]").forEach(b => b.addEventListener("click", async () => {
+      busy(b, true);
+      const history = (c.history || []).slice();
+      if (c.today && c.today.date !== todayStr()) {
+        const pr = c.today.progress || {};
+        history.push({ date: c.today.date, plan: c.today.plan, done: Object.values(pr).filter(v => v === "done").length, skipped: Object.values(pr).filter(v => v === "skip").length });
+      }
+      try { await updateMe({ today: { date: todayStr(), plan: +b.dataset.pickday, progress: {} }, history: history.slice(-60) }); }
+      finally { busy(b, false); }
     }));
   }
 
-  function renderPlan(c, sched) {
-    const st = planState(c, sched);
-    $("p-day").textContent = st.dayIndex + 1;
-    $("p-days").textContent = sched.days.length;
-    $("p-done").textContent = st.doneCount;
-    $("p-total").textContent = st.total;
-    $("p-kcal").textContent = st.todayKcal.toLocaleString();
-    $("p-target").textContent = sched.kcal.toLocaleString();
-    $("p-bar").style.width = Math.round((st.handled / st.total) * 100) + "%";
-    $("p-sched").textContent = sched.name;
-    $("workout-card").hidden = !(PACKAGES[c.package] && PACKAGES[c.package].workout);
+  // ---------- Step 3: today's meals one by one ----------
+  function renderToday(c, st) {
+    $("p-sched").textContent = st.plan.name;
+    $("p-done").textContent = st.done;
+    $("p-total").textContent = SLOTS.length;
+    $("p-kcal").textContent = st.kcal.toLocaleString();
+    $("p-target").textContent = st.plan.kcal.toLocaleString();
+    $("p-days").textContent = (c.history || []).filter(h => h.done > 0).length + (st.done > 0 ? 1 : 0);
+    $("p-bar").style.width = Math.round((st.handled / SLOTS.length) * 100) + "%";
+    $("change-day").hidden = st.handled > 0;
     $("next-card").hidden = !st.next;
     $("finished-card").hidden = !!st.next;
     if (st.next && st.next.recipe) {
       const r = st.next.recipe;
-      $("n-type").textContent = t("meal_" + st.next.m);
+      $("n-type").textContent = slotLabel(st.next.k);
       $("n-name").textContent = rText(r, "name");
       $("n-kcal").textContent = Math.round(r.kcal * st.factor);
       $("n-protein").textContent = Math.round((r.protein || 0) * st.factor);
@@ -300,22 +395,22 @@ if ($("login-form")) {
       $("n-ing").textContent = rText(r, "ing");
       $("n-steps").textContent = rText(r, "steps");
     }
-    $("today-list").innerHTML = st.todaySlots.map(s => {
-      const label = s.status === "done" ? t("st_done") : s.status === "skip" ? t("st_skipped") : st.next && s.key === st.next.key ? t("st_next") : t("st_later");
-      const cls = s.status ? "is-" + s.status : st.next && s.key === st.next.key ? "is-next" : "";
-      return '<li class="' + cls + '"><span class="icon">' + (statusIcon[s.status] || "🍽️") + "</span><span class='grow'><b>" + esc(t("meal_" + s.m)) + "</b> — " +
+    $("today-list").innerHTML = st.slots.map(s => {
+      const isNext = st.next && s.k === st.next.k;
+      const label = s.status === "done" ? t("st_done") : s.status === "skip" ? t("st_skipped") : isNext ? t("st_next") : t("st_later");
+      const cls = s.status ? "is-" + s.status : isNext ? "is-next" : "";
+      return '<li class="' + cls + '"><span class="icon">' + (statusIcon[s.status] || "🍽️") + "</span><span class='grow'><b>" + esc(slotLabel(s.k)) + "</b> — " +
         esc(s.recipe ? rText(s.recipe, "name") : "") + "</span><span class='tag'>" + esc(label) + "</span></li>";
     }).join("");
   }
-
   async function mark(status, btn) {
-    const sched = scheduleById(me.schedule_id); const st = planState(me, sched);
-    if (!st.next) return;
+    const st = dayState(me); if (!st || !st.next) return;
     busy(btn, true);
-    try { await updateMe({ progress: { ...(me.progress || {}), [st.next.key]: status } }); } finally { busy(btn, false); }
+    try { await updateMe({ today: { ...st.today, progress: { ...(st.today.progress || {}), [st.next.k]: status } } }); } finally { busy(btn, false); }
   }
   $("done-btn").addEventListener("click", () => mark("done", $("done-btn")));
   $("skip-btn").addEventListener("click", () => mark("skip", $("skip-btn")));
+  $("change-day").addEventListener("click", async () => { await updateMe({ today: null }); });
 
   $("ib-submit").addEventListener("click", async () => {
     const num = id => { const v = parseFloat($(id).value); return isNaN(v) ? null : v; };
@@ -324,7 +419,7 @@ if ($("login-form")) {
       await DB.insert("inbody", { user_id: me.id, weight: num("ib-weight"), fat: num("ib-fat"), muscle: num("ib-muscle") });
       await updateMe({ inbody_requested: false });
       $("ib-thanks").hidden = false;
-    } catch (e) { alert(friendlyError(e)); } finally { busy($("ib-submit"), false); }
+    } catch (e) { $("ib-err").textContent = friendlyError(e); } finally { busy($("ib-submit"), false); }
   });
 
   $("re-send").addEventListener("click", async () => {
@@ -352,24 +447,25 @@ if ($("login-form")) {
   refresh();
 }
 
-// Example schedules, added automatically the first time the dietitian signs in (she can delete them)
-const DEMO_SCHEDULES = () => {
-  const week = pattern => Array.from({ length: 7 }, (_, i) => pattern[i % pattern.length]);
-  return [
-    { name: "نزول وزن ١٢٥٠", kcal: 1250, days: week([{ b: "b5", l: "l4", d: "d5", s: "s5" }, { b: "b3", l: "l3", d: "d4", s: "s4" }]) },
-    { name: "نزول وزن ١٤٥٠", kcal: 1450, days: week([{ b: "b1", l: "l4", d: "d1", s: "s1" }, { b: "b5", l: "l2", d: "d4", s: "s3" }, { b: "b3", l: "l3", d: "d5", s: "s2" }]) },
-    { name: "محافظة ١٨٠٠", kcal: 1800, days: week([{ b: "b2", l: "l1", d: "d3", s: "s2" }, { b: "b4", l: "l5", d: "d2", s: "s1" }]) }
-  ];
-};
+// Example one-day plans, added automatically the first time the dietitian signs in (she can delete them)
+const DEMO_SCHEDULES = () => [
+  { name: "يوم خفيف ١٢٠٠", kcal: 1200, days: [{ b: "b5", s1: "s5", l: "l4", s2: "s4", d: "d5" }] },
+  { name: "يوم متوازن ١٣٠٠", kcal: 1300, days: [{ b: "b3", s1: "s1", l: "l3", s2: "s5", d: "d1" }] },
+  { name: "يوم مدى ١٣٥٠", kcal: 1350, days: [{ b: "b1", s1: "s4", l: "l4", s2: "s3", d: "d4" }] },
+  { name: "يوم بروتين ١٤٥٠", kcal: 1450, days: [{ b: "b2", s1: "s4", l: "l2", s2: "s1", d: "d1" }] },
+  { name: "يوم شبع ١٥٠٠", kcal: 1500, days: [{ b: "b4", s1: "s3", l: "l1", s2: "s4", d: "d5" }] },
+  { name: "يوم نشيط ١٨٠٠", kcal: 1800, days: [{ b: "b1", s1: "s2", l: "l5", s2: "s1", d: "d3" }] }
+];
 
 // ===== Dietitian page =====
 if ($("admin-login")) {
-  let editing = null;
+  let editing = null;      // the one-day plan being built
   let recipeFilter = "all";
   let openClient = null;
   let deleteArmed = null;
   let CLIENTS = [];
   let signupMode = false;
+  const RECIPE_TYPES = ["b", "l", "d", "s"];
 
   function msg(text) { $("admin-msg").textContent = text; $("admin-msg").hidden = !text; }
 
@@ -421,14 +517,13 @@ if ($("admin-login")) {
     msg("");
   }));
 
-  // ---- Schedules ----
+  // ---- One-day plans ----
   function renderSchedules() {
     $("no-sched").hidden = SCHEDULES.length > 0;
     const cards = SCHEDULES.map(s => {
-      const users = CLIENTS.filter(c => c.schedule_id === s.id).length;
       const match = CLIENTS.filter(c => Math.abs((c.kcal || 0) - s.kcal) <= MATCH_RANGE).length;
       return '<div class="card sched-card"><h3>' + esc(s.name) + '</h3><p class="stat">' + s.kcal.toLocaleString() + " <small>" + esc(t("kcal_short")) + "</small></p>" +
-        "<p class='muted'>" + s.days.length + " " + esc(t("ad_days")) + " · " + users + " " + esc(t("ad_clients_on")) + " · " + match + " " + esc(t("ad_matching")) + "</p>" +
+        mealNamesHTML(tplMeals(s)) + "<p class='muted'>" + match + " " + esc(t("ad_matching")) + "</p>" +
         '<button class="btn outline small" data-del="' + esc(s.id) + '">' + esc(t(deleteArmed === s.id ? "ad_confirm_delete" : "ad_delete")) + "</button></div>";
     }).join("");
     $("sched-list").innerHTML = '<button class="add-card" id="add-sched-btn"><span class="plus">+</span><span>' + esc(t("ad_new_sched")) + "</span></button>" + cards;
@@ -441,60 +536,47 @@ if ($("admin-login")) {
     }));
   }
   function openEditor() {
-    editing = { days: [] };
+    editing = { b: "", s1: "", l: "", s2: "", d: "" };
     $("s-name").value = "";
-    resizeDays();
+    renderDayEditor();
     $("sched-editor").hidden = false;
     $("sched-err").textContent = "";
     $("sched-editor").scrollIntoView({ behavior: "smooth" });
   }
-  function resizeDays() {
-    const n = Math.min(14, Math.max(1, +$("s-days").value || 7));
-    while (editing.days.length < n) editing.days.push({ b: "", l: "", d: "", s: "" });
-    editing.days.length = n;
-    renderDaysEditor();
-  }
-  function renderDaysEditor() {
+  function renderDayEditor() {
     if (!editing) return;
     const target = +$("s-kcal").value || 0;
-    const recipes = allRecipes();
-    $("days-editor").innerHTML = editing.days.map((day, di) => {
-      const total = dayTotal(day);
-      const f = total ? portionFactor({ kcal: target }, day) : 1;
-      const selects = MEALS.map(m => {
-        const opts = recipes.filter(r => r.meal === m).map(r => '<option value="' + esc(r.id) + '"' + (day[m] === r.id ? " selected" : "") + ">" + esc(rText(r, "name")) + " (" + r.kcal + ")</option>").join("");
-        return '<div class="field"><label for="sel-' + di + "-" + m + '">' + esc(t("meal_" + m)) + '</label><select id="sel-' + di + "-" + m + '" data-day="' + di + '" data-meal="' + m + '"><option value="">' + esc(t("ad_choose")) + "</option>" + opts + "</select></div>";
-      }).join("");
-      return '<div class="day-box"><div class="day-head"><b>' + esc(t("pt_day")) + " " + (di + 1) + "</b><span class='muted'>" + esc(t("ad_day_total")) + ": " + total + (total ? " → ×" + f + " = " + Math.round(total * f) : "") + " " + esc(t("kcal_short")) + "</span></div><div class='form-grid'>" + selects + "</div></div>";
+    const total = mealsTotal(editing);
+    const f = total ? portionFactor(target, editing) : 1;
+    $("day-editor").innerHTML = SLOTS.map(k => {
+      const opts = recipesFor(k).map(r => '<option value="' + esc(r.id) + '"' + (editing[k] === r.id ? " selected" : "") + ">" + esc(rText(r, "name")) + " (" + r.kcal + ")</option>").join("");
+      return '<div class="field"><label for="se-' + k + '">' + esc(slotLabel(k)) + '</label><select id="se-' + k + '" data-se="' + k + '"><option value="">' + esc(t("ad_choose")) + "</option>" + opts + "</select></div>";
     }).join("");
-    document.querySelectorAll("#days-editor select").forEach(s => s.addEventListener("change", () => { editing.days[+s.dataset.day][s.dataset.meal] = s.value; renderDaysEditor(); }));
+    $("day-total").textContent = total + (total ? " → ×" + f + " = " + Math.round(total * f) : "") + " " + t("kcal_short");
+    document.querySelectorAll("[data-se]").forEach(s => s.addEventListener("change", () => { editing[s.dataset.se] = s.value; renderDayEditor(); }));
   }
+  // pick recipes so the day lands close to the target
   function autofill() {
     const target = +$("s-kcal").value || 1500;
-    const by = m => allRecipes().filter(r => r.meal === m);
-    editing.days = editing.days.map((_, di) => {
-      let best = null, bestDiff = Infinity;
-      for (let tries = 0; tries < 60; tries++) {
-        const day = {};
-        MEALS.forEach(m => { const list = by(m); day[m] = list.length ? list[(di + tries * (MEALS.indexOf(m) + 1)) % list.length].id : ""; });
-        const diff = Math.abs(dayTotal(day) - target);
-        if (diff < bestDiff) { best = day; bestDiff = diff; }
-      }
-      return best;
-    });
-    renderDaysEditor();
+    let best = null, bestDiff = Infinity;
+    for (let i = 0; i < 400; i++) {
+      const day = {};
+      SLOTS.forEach(k => { const list = recipesFor(k); day[k] = list.length ? list[Math.floor(Math.random() * list.length)].id : ""; });
+      if (day.s1 === day.s2 && recipesFor("s1").length > 1) continue;
+      const diff = Math.abs(mealsTotal(day) - target);
+      if (diff < bestDiff) { best = day; bestDiff = diff; }
+    }
+    editing = best; renderDayEditor();
   }
-  $("s-days").addEventListener("input", () => editing && resizeDays());
-  $("s-kcal").addEventListener("input", renderDaysEditor);
+  $("s-kcal").addEventListener("input", renderDayEditor);
   $("autofill-btn").addEventListener("click", autofill);
   $("cancel-sched").addEventListener("click", () => { editing = null; $("sched-editor").hidden = true; });
   $("save-sched").addEventListener("click", async () => {
     const name = $("s-name").value.trim(), kcal = +$("s-kcal").value;
-    const complete = editing.days.every(d => MEALS.every(m => d[m]));
-    if (!name || !kcal || !complete) { $("sched-err").textContent = t("err_sched"); return; }
+    if (!name || !kcal || !SLOTS.every(k => editing[k])) { $("sched-err").textContent = t("err_sched"); return; }
     busy($("save-sched"), true);
     try {
-      await DB.insert("schedules", { name, kcal, days: editing.days.map(d => ({ ...d })) });
+      await DB.insert("schedules", { name, kcal, days: [{ ...editing }] });
       await loadSchedules();
       editing = null; $("sched-editor").hidden = true;
       renderSchedules(); msg(t("ad_saved"));
@@ -504,7 +586,7 @@ if ($("admin-login")) {
 
   // ---- Recipes ----
   function renderRecipes() {
-    const filters = ["all"].concat(MEALS);
+    const filters = ["all"].concat(RECIPE_TYPES);
     $("recipe-filter").innerHTML = filters.map(f => '<button class="chip' + (recipeFilter === f ? " active" : "") + '" data-f="' + f + '">' + esc(f === "all" ? t("ad_all") : t("meal_" + f)) + "</button>").join("");
     document.querySelectorAll("[data-f]").forEach(b => b.addEventListener("click", () => { recipeFilter = b.dataset.f; renderRecipes(); }));
     const list = allRecipes().filter(r => recipeFilter === "all" || r.meal === recipeFilter);
@@ -529,27 +611,25 @@ if ($("admin-login")) {
 
   // ---- Clients ----
   function clientById(id) { return CLIENTS.find(c => c.id === id); }
+  function todayText(c) {
+    const st = (c.plans || []).length >= 7 ? dayState(c) : null;
+    return st ? st.done + " / " + SLOTS.length : "—";
+  }
   function renderClients() {
     $("no-clients").hidden = CLIENTS.length > 0;
     $("clients-list").hidden = !!openClient;
     $("client-detail").hidden = !openClient;
     if (openClient) return renderDetail();
     if (!CLIENTS.length) { $("clients-table").innerHTML = ""; return; }
-    $("clients-table").innerHTML = "<tr><th>" + [t("ad_c_name"), t("ad_c_target"), t("pt_package"), t("pt_status"), t("ad_c_plan"), t("ad_c_progress"), "InBody", ""].map(esc).join("</th><th>") + "</th></tr>" +
+    $("clients-table").innerHTML = "<tr><th>" + [t("ad_c_name"), t("ad_c_target"), t("pt_package"), t("pt_status"), t("ad_days_chosen"), t("ad_today"), "InBody", ""].map(esc).join("</th><th>") + "</th></tr>" +
       CLIENTS.map(c => {
-        const sched = scheduleById(c.schedule_id);
-        const prog = sched ? Math.round(planState(c, sched).handled / (sched.days.length * MEALS.length) * 100) + "%" : "—";
-        const opts = '<option value="">' + esc(t("ad_client_choice")) + "</option>" + SCHEDULES.map(s => '<option value="' + esc(s.id) + '"' + (c.schedule_id === s.id ? " selected" : "") + ">" + esc(s.name) + " (" + s.kcal + ")</option>").join("");
         const pay = c.paid ? esc(t("ad_paid"))
           : c.pay_status === "rejected" ? '<span class="status-pill bad">' + esc(t("tr_rejected")) + "</span>"
           : '<button class="btn small" data-open="' + esc(c.id) + '">' + esc(t("ad_view_receipt")) + "</button>";
         const ib = c.inbody_requested ? '<span class="status-pill">' + esc(t("ib_requested")) + "</span>" : "✓";
         const pk = PACKAGES[c.package] ? t(PACKAGES[c.package].nameKey) : "—";
-        return "<tr><td>" + esc(c.name) + "</td><td>" + (c.kcal || "—") + "</td><td>" + esc(pk) + "</td><td>" + pay + "</td><td><select data-assign='" + esc(c.id) + "'>" + opts + "</select></td><td>" + prog + "</td><td>" + ib + '</td><td><button class="btn outline small" data-open="' + esc(c.id) + '">' + esc(t("ad_open")) + "</button></td></tr>";
+        return "<tr><td>" + esc(c.name) + "</td><td>" + (c.kcal || "—") + "</td><td>" + esc(pk) + "</td><td>" + pay + "</td><td>" + Math.min(7, (c.plans || []).length) + " / 7</td><td>" + todayText(c) + "</td><td>" + ib + '</td><td><button class="btn outline small" data-open="' + esc(c.id) + '">' + esc(t("ad_open")) + "</button></td></tr>";
       }).join("");
-    document.querySelectorAll("[data-assign]").forEach(s => s.addEventListener("change", async () => {
-      try { await DB.update("profiles", s.dataset.assign, { schedule_id: s.value || null, progress: {} }); await loadClients(); renderClients(); } catch (e) { msg(friendlyError(e)); }
-    }));
     document.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => { openClient = b.dataset.open; renderClients(); }));
     updateBadge();
   }
@@ -566,22 +646,24 @@ if ($("admin-login")) {
     $("cd-info").innerHTML = rows.map(r => "<div><span class='muted small-label'>" + esc(r[0]) + "</span><div>" + esc(r[1]) + "</div></div>").join("");
     $("wa-client").href = waLink(saudiNumber(c.phone), (LANG === "ar" ? "مرحباً " : "Hi ") + (c.name || "").split(" ")[0] + "، " + t("ib_alert_text"));
     $("cd-ib-pending").hidden = !c.inbody_requested;
+    $("cd-workout").value = c.workout_link || "";
+    $("cd-workout-msg").textContent = "";
 
-    // schedule progress
-    const sch = scheduleById(c.schedule_id);
-    if (!sch) { $("cd-progress").innerHTML = "<p class='muted'>" + esc(t("cd_no_sched")) + "</p>"; }
+    // the client's 7 days + daily history
+    const plans = c.plans || [];
+    $("cd-reset").hidden = !plans.length;
+    if (!plans.length) $("cd-progress").innerHTML = "<p class='muted'>" + esc(t("ad_no_plans")) + "</p>";
     else {
-      const st = planState(c, sch);
-      const pct = Math.round(st.handled / st.total * 100);
-      const skipped = st.slots.filter(x => x.status === "skip").length;
-      const days = sch.days.map((day, di) => "<tr><th>" + esc(t("pt_day")) + " " + (di + 1) + "</th>" + MEALS.map(m => {
-        const stt = (c.progress || {})[slotKey(di, m)]; const r = recipeById(day[m]);
-        return "<td class='" + (stt ? "is-" + stt : "") + "'>" + (stt === "done" ? "✅ " : stt === "skip" ? "⏭️ " : "") + esc(r ? rText(r, "name") : "—") + "</td>";
-      }).join("") + "</tr>").join("");
-      $("cd-progress").innerHTML = "<p><b>" + esc(sch.name) + "</b> · " + sch.kcal + " " + esc(t("kcal_short")) + "</p>" +
-        "<div class='bar'><div class='bar-fill' style='width:" + pct + "%'></div></div>" +
-        "<p class='muted'>" + esc(t("cd_meals")) + ": " + st.doneCount + " / " + st.total + " · " + esc(t("cd_skipped")) + ": " + skipped + " · " + esc(t("pt_day")) + " " + (st.dayIndex + 1) + "</p>" +
-        "<div class='table-wrap'><table class='progress-table'><tr><th></th>" + MEALS.map(m => "<th>" + esc(t("meal_" + m)) + "</th>").join("") + "</tr>" + days + "</table></div>";
+      const st = plans.length >= 7 ? dayState(c) : null;
+      const planCards = plans.slice(0, 7).map((p, i) => '<div class="mini-plan' + (st && st.today.plan === i ? " is-today" : "") + '"><b>' + esc(t("pt_day")) + " " + (i + 1) + " · " + esc(p.name) + "</b> <small class='muted'>" + p.kcal + " " + esc(t("kcal_short")) + "</small>" + mealNamesHTML(p.meals) + "</div>").join("");
+      const hist = (c.history || []).slice().reverse().slice(0, 14);
+      const histRows = (st ? [{ date: st.today.date, plan: st.today.plan, done: st.done, skipped: st.slots.filter(x => x.status === "skip").length, isToday: true }] : []).concat(hist);
+      $("cd-progress").innerHTML = (st ? "<p><b>" + esc(t("ad_today")) + ":</b> " + esc(st.plan.name) + " — " + st.done + " / " + SLOTS.length + " " + esc(t("h_meals")) + "</p>" : "") +
+        "<div class='mini-plans'>" + planCards + "</div>" +
+        "<h4>" + esc(t("ad_history")) + "</h4>" +
+        (histRows.length ? "<div class='table-wrap'><table><tr><th>" + [t("h_date"), t("h_plan"), t("h_meals"), t("cd_skipped")].map(esc).join("</th><th>") + "</th></tr>" +
+          histRows.map(h => "<tr><td>" + esc(h.date) + (h.isToday ? " (" + esc(t("ad_today")) + ")" : "") + "</td><td>" + esc(plans[h.plan] ? plans[h.plan].name : "—") + "</td><td>" + h.done + " / " + SLOTS.length + "</td><td>" + (h.skipped || 0) + "</td></tr>").join("") + "</table></div>"
+          : "<p class='muted'>—</p>");
     }
 
     // payment review
@@ -617,13 +699,25 @@ if ($("admin-login")) {
   $("confirm-pay").addEventListener("click", () => changeClient({ paid: true, pay_status: "confirmed" }));
   $("reject-pay").addEventListener("click", () => changeClient({ pay_status: "rejected" }));
   $("send-ib").addEventListener("click", () => changeClient({ inbody_requested: true, inbody_requested_at: new Date().toISOString() }, t("ad_ib_sent")));
+  $("cd-workout-save").addEventListener("click", async () => {
+    const v = $("cd-workout").value.trim();
+    if (v && !/^https?:\/\//i.test(v)) { $("cd-workout-msg").textContent = t("err_link"); return; }
+    await changeClient({ workout_link: v || null });
+    $("cd-workout-msg").textContent = t("ad_saved_ok");
+  });
+  let resetArmed = false;
+  $("cd-reset").addEventListener("click", async () => {
+    if (!resetArmed) { resetArmed = true; $("cd-reset").textContent = t("ad_confirm_delete"); return; }
+    resetArmed = false; $("cd-reset").textContent = t("ad_reset_plans");
+    await changeClient({ plans: [], today: null });
+  });
   $("refresh-btn").addEventListener("click", async () => { busy($("refresh-btn"), true); await Promise.all([loadClients(), loadSchedules(), loadRecipes()]); renderAll(); busy($("refresh-btn"), false); });
 
   function updateBadge() {
     const n = CLIENTS.filter(c => !c.paid && c.pay_status === "pending" && c.receipt_path).length;
     document.querySelector('.tab[data-tab="clients"]').textContent = t("tab_clients") + (n ? " (" + n + ")" : "");
   }
-  function renderAll() { renderSchedules(); renderRecipes(); renderClients(); renderDaysEditor(); updateBadge(); }
+  function renderAll() { renderSchedules(); renderRecipes(); renderClients(); renderDayEditor(); updateBadge(); }
   document.addEventListener("langchange", () => { if (!$("admin-view").hidden) renderAll(); });
   gate();
 }
