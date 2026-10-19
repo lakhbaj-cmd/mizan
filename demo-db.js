@@ -37,9 +37,13 @@ if (isDemo()) {
         workout_link: "https://www.youtube.com/results?search_query=home+workout+beginner", inbody_requested: false, health: "", food: "ما أحب السمك", created_at: new Date().toISOString() },
       { id: "demo-noura", role: "client", name: "نورة خالد", email: "noura@demo.sa", phone: "0550000000", sex: "female", age: 31, height: 158, weight: 74, activity: 1.2, goal: "lose",
         kcal: 1250, bmr: 1390, package: "plus", paid: false, pay_status: "pending", receipt_path: "demo/receipt.svg", receipt_type: "image", receipt_sender: "Noura K.", receipt_amount: 250,
-        receipt_date: new Date().toISOString(), plans: [], history: [], inbody_requested: true, created_at: new Date().toISOString() },
+        receipt_date: new Date().toISOString(), plans: [], history: [], inbody_requested: true, health: "غدة درقية وآخذ دواء", created_at: new Date(Date.now() - 4 * 864e5).toISOString() },
       { id: "demo-reem", role: "client", name: "ريم سعد", email: "reem@demo.sa", phone: "0560000000", sex: "female", age: 24, height: 165, weight: 60, activity: 1.55, goal: "keep",
-        kcal: null, bmr: null, package: "basic", paid: true, pay_status: "confirmed", plans: [], history: [], inbody_requested: false, created_at: new Date().toISOString() }
+        kcal: null, bmr: null, package: "basic", paid: true, pay_status: "confirmed", plans: [], history: [], inbody_requested: false, health: "", food: "", created_at: new Date(Date.now() - 3 * 864e5).toISOString() },
+      { id: "demo-hind", role: "client", name: "هند محمد", email: "hind@demo.sa", phone: "0570000000", sex: "female", age: 38, height: 160, weight: 80, activity: 1.2, goal: "lose",
+        kcal: 1350, package: "plus", paid: true, pay_status: "confirmed", plans: SEVEN, today: null,
+        history: [{ date: day(9), plan: 0, done: 2, skipped: 3 }, { date: day(8), plan: 1, done: 1, skipped: 4 }, { date: day(7), plan: 2, done: 2, skipped: 3 }, { date: day(6), plan: 4, done: 1, skipped: 2 }, { date: day(5), plan: 5, done: 0, skipped: 5 }],
+        inbody_requested: false, health: "", food: "", created_at: new Date(Date.now() - 15 * 864e5).toISOString() }
     ],
     schedules: (typeof DEMO_SCHEDULES === "function" ? DEMO_SCHEDULES() : []).map((s, i) => ({ id: "demo-s" + i, created_at: new Date().toISOString(), ...s })),
     recipes: [],

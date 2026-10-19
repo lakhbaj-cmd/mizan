@@ -302,6 +302,7 @@ if ($("login-form")) {
     const c = me;
     markSignedIn(!!c);
     $("login-view").hidden = !!c;
+    if ($("chat-fab")) { if (!c) { $("chat-panel").hidden = true; $("chat-msgs").innerHTML = ""; } $("chat-fab").hidden = !c || !$("chat-panel").hidden; }
     $("dash-view").hidden = !c;
     if (!c) return;
     $("d-name").textContent = (c.name || "").split(" ")[0];
@@ -504,6 +505,145 @@ if ($("login-form")) {
   });
 
   $("logout-btn").addEventListener("click", async () => { await DB.signOut(); me = null; render(); });
+
+  // ---------- Nojood helper: a rule-based chat assistant for clients ----------
+  // It only answers from the client's own plan and the recipes. It never changes calories or plans,
+  // and anything about health goes to Nojood.
+  const CHAT = {
+    ar: {
+      title: "مساعد نجود", open: "اسأل المساعد", ph: "اكتب سؤالك…", send: "إرسال",
+      hi: "هلا! أنا مساعد نجود 🌿 أقدر أقولك وجبتك الجاية، طريقة الوصفة، المكونات، وكم سعرة باقي لك اليوم.",
+      chips: ["وش وجبتي الجاية؟", "كيف أسويها؟", "كم سعرة باقي؟", "جدول اليوم"],
+      no_plan: "لسا ما اخترت جدول اليوم. اختر واحد من أيامك السبعة فوق وبعدين اسألني.",
+      no_days: "لسا ما اخترت أيامك السبعة. اختارها فوق وبعدين أقدر أساعدك.",
+      wait: "الأخصائية لسا ما حددت سعراتك. أول ما تحددها يطلع لك جدولك.",
+      off: "اليوم يوم أوف 🌿 ما فيه جدول. استمتع وارجع بكرة!",
+      done: "خلّصت كل وجبات اليوم 🎉 تقدر تضغط \"ابدأ الجدول التالي\" لو تبي يوم جديد.",
+      next: "وجبتك الجاية: {slot} — {name} ({kcal} سعرة).",
+      how: "طريقة {name}: {steps}",
+      ing: "مكونات {name}: {ing}",
+      kcal: "أكلت {eaten} من {target} سعرة اليوم. باقي لك {left} سعرة.",
+      today: "جدول اليوم ({plan}):",
+      workout: "جدول تمارينك هنا: {link}", workout_none: "الأخصائية لسا ما أضافت جدول تمارين.", workout_basic: "باقتك ما فيها جدول تمارين. باقة تغذية + تمارين فيها جدول.",
+      offday: "لو تبي اليوم يوم أوف اضغط زر \"🌿 يوم أوف\" فوق الوجبات.",
+      change: "تغيير السعرات أو الجدول ترجع فيه للأخصائية نجود، أنا ما أقدر أغيّره.",
+      health: "هذا سؤال صحي ولازم تسأل فيه الأخصائية نجود مباشرة. أنا ما أقدر أجاوب عليه.",
+      skip: "لو ما تبي الوجبة اضغط \"تخطّي\" وتنتقل للي بعدها.",
+      thanks: "العفو! 🌿", fallback: "ما فهمت عليك 😅 جرّب واحد من هذي:"
+    },
+    en: {
+      title: "Nojood helper", open: "Ask the helper", ph: "Type your question…", send: "Send",
+      hi: "Hi! I'm the Nojood helper 🌿 I can tell you your next meal, how to make it, the ingredients, and how many calories you have left today.",
+      chips: ["What's my next meal?", "How do I make it?", "Calories left?", "Today's plan"],
+      no_plan: "You haven't picked today's plan yet. Pick one of your 7 days above, then ask me.",
+      no_days: "You haven't chosen your 7 days yet. Choose them above, then I can help.",
+      wait: "Your dietitian hasn't set your calories yet. Your plan shows up as soon as she does.",
+      off: "Today is an off day 🌿 No plan today. Enjoy and come back tomorrow!",
+      done: "You finished all of today's meals 🎉 Tap \"Start the next plan\" if you want a new day.",
+      next: "Your next meal: {slot} — {name} ({kcal} kcal).",
+      how: "How to make {name}: {steps}",
+      ing: "Ingredients for {name}: {ing}",
+      kcal: "You've eaten {eaten} of {target} kcal today. {left} kcal left.",
+      today: "Today's plan ({plan}):",
+      workout: "Your workout plan is here: {link}", workout_none: "Your dietitian hasn't added a workout plan yet.", workout_basic: "Your package doesn't include a workout plan. The Nutrition + Workout package does.",
+      offday: "If you want today off, tap the \"🌿 Off day\" button above your meals.",
+      change: "Changing your calories or plan is up to your dietitian Nojood. I can't change it.",
+      health: "That's a health question, so please ask your dietitian Nojood directly. I can't answer it.",
+      skip: "If you don't want a meal, tap \"Skip\" to move to the next one.",
+      thanks: "You're welcome! 🌿", fallback: "Sorry, I didn't get that 😅 Try one of these:"
+    }
+  };
+  const ct = (k, vars) => { let s = (CHAT[LANG] || CHAT.en)[k] || CHAT.en[k]; for (const v in (vars || {})) s = s.split("{" + v + "}").join(vars[v]); return s; };
+  // make Arabic easier to match: remove tashkeel and unify letters
+  const norm = s => String(s || "").toLowerCase().replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+  const has = (q, words) => words.some(w => q.includes(norm(w)));
+  const W = {
+    health: ["حامل", "حمل", "سكري", "عندي سكر", "السكر", "ضغط", "دوا", "علاج", "حساسيه", "دوخه", "دايخ", "اتالم", "يوجع", "يعور", "مريض", "مرض", "رضاعه", "pregnan", "diabet", "medic", "allerg", "pain", "sick", "dizzy", "blood pressure", "breastfeed"],
+    change: ["غير", "اغير", "زود", "قلل", "نقص", "change", "increase", "decrease", "more calories", "less calories"],
+    how: ["كيف", "طريقه", "اسوي", "اطبخ", "how", "make", "cook", "recipe", "steps"],
+    ing: ["مكونات", "وش فيها", "ايش فيها", "ingredient", "what's in", "whats in"],
+    kcal: ["سعر", "كالوري", "باقي", "calor", "kcal", "left"],
+    next: ["الجايه", "الجاي", "التاليه", "بعدين", "next", "now"],
+    today: ["جدول اليوم", "وجبات اليوم", "اليوم", "today", "plan", "meals"],
+    workout: ["تمرين", "تمارين", "رياضه", "workout", "exercise", "gym"],
+    offday: ["اوف", "راحه", "off", "rest", "break"],
+    skip: ["تخطي", "ما ابي", "مابي", "ماابي", "skip", "don't want", "dont want"],
+    thanks: ["شكرا", "يعطيك", "مشكور", "thank", "thx"],
+    hi: ["هلا", "مرحبا", "السلام", "هاي", "hello", "hi", "hey", "help", "مساعده"]
+  };
+  const SLOT_WORDS = { b: ["فطور", "breakfast"], l: ["غدا", "lunch"], d: ["عشا", "dinner"], s2: ["سناك 2", "snack 2", "السناك الثاني", "second snack"], s1: ["سناك", "snack"] };
+  function slotFromText(q) { for (const k of ["b", "l", "d", "s2", "s1"]) if (has(q, SLOT_WORDS[k])) return k; return null; }
+
+  // the brain: read the question, decide which rule matches, answer from the client's own data
+  function chatAnswer(text) {
+    const q = norm(text), c = me;
+    if (has(q, W.health)) return ct("health");             // health always goes to the dietitian first
+    if (has(q, W.thanks)) return ct("thanks");
+    if (has(q, W.change) && has(q, W.kcal.concat(["جدول", "plan"]))) return ct("change");
+    if (has(q, W.workout)) {
+      if (!(PACKAGES[c.package] && PACKAGES[c.package].workout)) return ct("workout_basic");
+      return c.workout_link ? ct("workout", { link: c.workout_link }) : ct("workout_none");
+    }
+    if (has(q, W.offday)) return isOffToday(c) ? ct("off") : ct("offday");
+    if (has(q, W.skip)) return ct("skip");
+    if (!c.kcal) return ct("wait");
+    if ((c.plans || []).length < 7) return ct("no_days");
+    if (isOffToday(c)) return ct("off");
+    const st = dayState(c);
+    if (!st) return ct("no_plan");
+    const slotAsked = slotFromText(q);
+    const target = slotAsked ? st.slots.find(s => s.k === slotAsked) : st.next;
+    const kcalOf = s => Math.round((s.recipe ? s.recipe.kcal : 0) * st.factor);
+    if (has(q, W.how) || has(q, W.ing)) {
+      if (!target) return ct("done");
+      const r = target.recipe; if (!r) return ct("fallback");
+      return has(q, W.ing) ? ct("ing", { name: rText(r, "name"), ing: rText(r, "ing") }) : ct("how", { name: rText(r, "name"), steps: rText(r, "steps") });
+    }
+    if (has(q, W.kcal)) return ct("kcal", { eaten: st.kcal, target: st.plan.kcal, left: Math.max(0, st.plan.kcal - st.kcal) });
+    if (slotAsked || has(q, W.next)) {
+      if (!target) return ct("done");
+      return ct("next", { slot: slotLabel(target.k), name: target.recipe ? rText(target.recipe, "name") : "—", kcal: kcalOf(target) });
+    }
+    if (has(q, W.today)) return ct("today", { plan: st.plan.name }) + "\n" + st.slots.map(s => (s.status === "done" ? "✅ " : s.status === "skip" ? "⏭️ " : "• ") + slotLabel(s.k) + ": " + (s.recipe ? rText(s.recipe, "name") : "—") + " (" + kcalOf(s) + ")").join("\n");
+    if (has(q, W.hi)) return ct("hi");
+    return null;   // didn't understand
+  }
+
+  // chat window
+  const chatBox = document.createElement("div");
+  chatBox.innerHTML = '<button class="chat-fab" id="chat-fab" type="button" hidden>💬 <span id="chat-fab-txt"></span></button>' +
+    '<div class="chat-panel" id="chat-panel" hidden><div class="chat-head"><b id="chat-title"></b><button class="link-btn" id="chat-close" type="button">✕</button></div>' +
+    '<div class="chat-msgs" id="chat-msgs" aria-live="polite"></div><div class="chat-chips" id="chat-chips"></div>' +
+    '<form class="chat-form" id="chat-form"><input id="chat-input" autocomplete="off"><button class="btn small" id="chat-send"></button></form></div>';
+  document.body.appendChild(chatBox);
+  function chatSay(who, text) {
+    const m = document.createElement("div"); m.className = "chat-msg " + who; m.dir = "auto"; m.textContent = text;
+    $("chat-msgs").appendChild(m); $("chat-msgs").scrollTop = $("chat-msgs").scrollHeight;
+  }
+  function chatChips() { $("chat-chips").innerHTML = ct("chips").map(x => '<button type="button" class="chat-chip">' + esc(x) + "</button>").join(""); }
+  function chatAsk(text) {
+    text = String(text || "").trim(); if (!text || !me) return;
+    chatSay("me", text);
+    // answer in the language the client typed in
+    const keep = LANG; LANG = /[\u0600-\u06FF]/.test(text) ? "ar" : /[a-z]/i.test(text) ? "en" : LANG;
+    let a; try { a = chatAnswer(text); } finally { LANG = keep; }
+    setTimeout(() => { chatSay("bot", a || ct("fallback")); chatChips(); }, 250);
+  }
+  function chatLabels() {
+    $("chat-fab-txt").textContent = ct("open"); $("chat-title").textContent = ct("title");
+    $("chat-input").placeholder = ct("ph"); $("chat-send").textContent = ct("send"); chatChips();
+  }
+  $("chat-fab").addEventListener("click", () => {
+    $("chat-panel").hidden = false; $("chat-fab").hidden = true;
+    if (!$("chat-msgs").children.length) chatSay("bot", ct("hi"));
+    $("chat-input").focus();
+  });
+  $("chat-close").addEventListener("click", () => { $("chat-panel").hidden = true; $("chat-fab").hidden = !me; });
+  $("chat-chips").addEventListener("click", e => { const b = e.target.closest(".chat-chip"); if (b) chatAsk(b.textContent); });
+  $("chat-form").addEventListener("submit", e => { e.preventDefault(); chatAsk($("chat-input").value); $("chat-input").value = ""; });
+  chatLabels(); document.addEventListener("langchange", chatLabels);
+  window.__chatAnswer = chatAnswer;   // used by the test file
+
   document.addEventListener("langchange", render);
   refresh();
 }
@@ -693,12 +833,14 @@ if ($("admin-login")) {
       }).join("");
     document.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => { openClient = b.dataset.open; renderClients(); }));
     updateBadge();
+    if (typeof renderAttention === "function") renderAttention();
   }
 
   async function renderDetail() {
     const c = clientById(openClient);
     if (!c) { openClient = null; return renderClients(); }
     $("cd-name").textContent = c.name;
+    if (typeof renderSuggest === "function") renderSuggest();
     const rows = [
       [t("f_phone"), c.phone], [t("f_email"), c.email], [t("f_age"), c.age], [t("f_height"), c.height], [t("f_weight"), c.weight],
       [t("f_goal"), c.goal ? t("goal_" + c.goal) : "—"], [t("ad_c_target"), (c.kcal || "—") + " " + t("kcal_short")],
@@ -789,6 +931,208 @@ if ($("admin-login")) {
     const n = CLIENTS.filter(c => (!isPaid(c) && c.pay_status === "pending" && c.receipt_path) || (isPaid(c) && !c.kcal)).length;
     document.querySelector('.tab[data-tab="clients"]').textContent = t("tab_clients") + (n ? " (" + n + ")" : "");
   }
+
+  // =====================================================================
+  // Nojood agent (Pro): 1) suggests calories + 7 plans  2) lists clients who need attention
+  // It only SUGGESTS. Nothing reaches a client until Nojood presses an approve button.
+  // Rules follow SKILL.md in the course folder.
+  // =====================================================================
+  const AG = {
+    ar: {
+      att_title: "👀 يحتاجون انتباهك", att_none: "كل العملاء تمام اليوم ✓",
+      att_kcal: "ينتظر سعراته من {d} أيام", att_days: "ما اختار أيامه السبعة من {d} أيام", att_idle: "ما فتح التطبيق من {d} أيام",
+      att_skip: "يتخطى وجبات كثير (آخر ٧ أيام: {s} تخطي، {k} تم)", att_ib: "طلبتي InBody من {d} أيام وما رد", att_pay: "إيصال تحويل ينتظر مراجعتك", att_health: "عنده ملاحظات صحية — راجعيه بنفسك",
+      sg_title: "🤖 اقتراح المساعد", sg_btn: "اقترح سعرات وجداول", sg_note: "المساعد يقترح بس. ما يوصل شي للعميل إلا لما تعتمدين.",
+      sg_bmr_ib: "BMR من InBody: {v}", sg_bmr_fat: "BMR من نسبة الدهون ({f}%): {v}", sg_bmr_std: "BMR بمعادلة Mifflin-St Jeor: {v}",
+      sg_act: "× النشاط {m} = {v}", sg_goal_lose: "− 500 للنزول = {v}", sg_goal_gain: "+ 300 للزيادة = {v}", sg_goal_keep: "بدون تغيير (ثبات) = {v}",
+      sg_min: "⚠️ المعادلة طلعت {v} — رفعتها للحد الأدنى {m}", sg_health: "⚠️ ملاحظات صحية: \"{h}\" — ما أقترح سعرات. هذا يحتاج مراجعتك.",
+      sg_missing: "⚠️ ناقص معلومات ({f}). ما أقدر أحسب.", sg_dislike: "شلت {n} وصفات فيها أكل ما يحبه ({w})", sg_current: "سعراته الحالية: {v}",
+      sg_kcal: "السعرات المقترحة", sg_use_kcal: "اعتمدي السعرات بس", sg_optA: "خيار أ: الأقرب للسعرات", sg_optB: "خيار ب: بروتين أعلى",
+      sg_avg: "متوسط {k} سعرة · {p} جم بروتين", sg_portion: "ما فيه أيام كفاية ضمن ±150، الحصص بتتعدل ×{f}",
+      sg_approve: "اعتمدي السعرات + الجداول", sg_replace: "متأكدة؟ هذا يبدل أيامه الحالية", sg_done: "✓ اعتمدتي — وصل للعميل",
+      sg_day: "يوم", sg_inactive_note: "النشاط هو اللي اختاره العميل وقت التسجيل — تأكدي منه لو تغير."
+    },
+    en: {
+      att_title: "👀 Need your attention", att_none: "All clients look fine today ✓",
+      att_kcal: "Waiting for calories for {d} days", att_days: "Hasn't chosen 7 days for {d} days", att_idle: "Hasn't opened the app for {d} days",
+      att_skip: "Skipping a lot (last 7 days: {s} skipped, {k} done)", att_ib: "InBody requested {d} days ago, no reply", att_pay: "Transfer receipt waiting for review", att_health: "Has health notes — review yourself",
+      sg_title: "🤖 Agent suggestion", sg_btn: "Suggest calories & plans", sg_note: "The agent only suggests. Nothing reaches the client until you approve.",
+      sg_bmr_ib: "BMR from InBody: {v}", sg_bmr_fat: "BMR from body fat ({f}%): {v}", sg_bmr_std: "BMR with Mifflin-St Jeor: {v}",
+      sg_act: "× activity {m} = {v}", sg_goal_lose: "− 500 to lose = {v}", sg_goal_gain: "+ 300 to gain = {v}", sg_goal_keep: "no change (keep) = {v}",
+      sg_min: "⚠️ Formula gave {v} — raised to the minimum {m}", sg_health: "⚠️ Health notes: \"{h}\" — no calorie suggestion. This needs your review.",
+      sg_missing: "⚠️ Missing info ({f}). Can't calculate.", sg_dislike: "Removed {n} recipes with food they don't eat ({w})", sg_current: "Current calories: {v}",
+      sg_kcal: "Suggested calories", sg_use_kcal: "Approve calories only", sg_optA: "Option A: closest to target", sg_optB: "Option B: more protein",
+      sg_avg: "avg {k} kcal · {p} g protein", sg_portion: "Not enough days within ±150, portions will be scaled ×{f}",
+      sg_approve: "Approve calories + plans", sg_replace: "Sure? This replaces their current days", sg_done: "✓ Approved — sent to the client",
+      sg_day: "Day", sg_inactive_note: "Activity is what the client picked at sign-up — check it if it changed."
+    }
+  };
+  const ag = (k, v) => { let s = (AG[LANG] || AG.en)[k] || AG.en[k]; for (const x in (v || {})) s = s.split("{" + x + "}").join(v[x]); return s; };
+  const nrm = s => String(s || "").toLowerCase().replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
+  const daysSince = iso => iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 864e5) : 0;
+
+  // ---- rule 6: health notes that stop the calorie suggestion ----
+  const HEALTH_STOP = ["حامل", "حمل", "رضاعه", "سكري", "السكر", "كلى", "كلي", "غده", "الغده", "دوا", "علاج", "ادويه", "اكل اضطراب", "فقدان الشهيه", "شره",
+    "pregnan", "breastfeed", "diabet", "kidney", "thyroid", "medic", "eating disorder", "anorex", "bulim"];
+  const EMPTY_NOTE = ["", "لا", "لايوجد", "لا يوجد", "ما فيه", "مافيه", "none", "no", "nothing", "-", "—"];
+  function healthFlag(c) {
+    const h = nrm(c.health).trim();
+    if (EMPTY_NOTE.includes(h)) return null;
+    return HEALTH_STOP.some(w => h.includes(nrm(w))) ? c.health : null;
+  }
+  // ---- rule 9: foods the client doesn't eat ----
+  const FOOD_GROUPS = [
+    ["سمك", "تونه", "سلمون", "fish", "tuna", "salmon"], ["بيض", "egg", "اومليت", "شكشوكه", "omelette", "shakshuka"],
+    ["حليب", "لبن", "زبادي", "جبن", "لبنه", "حلوم", "dairy", "milk", "yogurt", "cheese", "labneh", "halloumi", "laban"],
+    ["دجاج", "chicken"], ["لحم", "كفته", "beef", "kofta", "meat"], ["مكسرات", "لوز", "فول سوداني", "nuts", "almond", "peanut"],
+    ["فطر", "مشروم", "mushroom"], ["تمر", "dates"], ["عدس", "lentil"], ["حمص", "hummus", "chickpea"]
+  ];
+  function dislikeWords(c) {
+    const f = nrm(c.food); if (!f || EMPTY_NOTE.includes(f.trim())) return [];
+    const out = new Set();
+    FOOD_GROUPS.forEach(g => { if (g.some(w => f.includes(nrm(w)))) g.forEach(w => out.add(nrm(w))); });
+    return [...out];
+  }
+  const recipeText = r => nrm([r.name && r.name.ar, r.name && r.name.en, r.ing && r.ing.ar, r.ing && r.ing.en].join(" "));
+
+  // ---- rules 2-5: the calorie number, step by step ----
+  function suggestKcal(c, ib) {
+    const missing = ["weight", "height", "age"].filter(k => !c[k]);
+    if (missing.length) return { stop: ag("sg_missing", { f: missing.join(", ") }) };
+    const h = healthFlag(c);
+    if (h) return { stop: ag("sg_health", { h }) };
+    const steps = []; let bmr;
+    if (ib && ib.bmr) { bmr = ib.bmr; steps.push(ag("sg_bmr_ib", { v: bmr })); }
+    else if (ib && ib.fat) { bmr = Math.round(370 + 21.6 * c.weight * (1 - ib.fat / 100)); steps.push(ag("sg_bmr_fat", { f: ib.fat, v: bmr })); }
+    else { bmr = Math.round(10 * c.weight + 6.25 * c.height - 5 * c.age + (c.sex === "male" ? 5 : -161)); steps.push(ag("sg_bmr_std", { v: bmr })); }
+    const act = +c.activity || 1.2; let v = Math.round(bmr * act); steps.push(ag("sg_act", { m: act, v }));
+    if (c.goal === "lose") { v -= 500; steps.push(ag("sg_goal_lose", { v })); }
+    else if (c.goal === "gain") { v += 300; steps.push(ag("sg_goal_gain", { v })); }
+    else steps.push(ag("sg_goal_keep", { v }));
+    v = Math.round(v / 10) * 10;
+    const min = c.sex === "male" ? 1500 : 1200; const flags = [];
+    if (v < min) { flags.push(ag("sg_min", { v, m: min })); v = min; }
+    flags.push(ag("sg_inactive_note"));
+    return { kcal: v, steps, flags };
+  }
+
+  // ---- rules 7-10: build 7 one-day plans ----
+  function suggestPlans(c, target) {
+    const bad = dislikeWords(c);
+    const all = allRecipes();
+    const ok = all.filter(r => !bad.some(w => recipeText(r).includes(w)));
+    const removed = all.length - ok.length;
+    const by = { b: [], l: [], d: [], s: [] }; ok.forEach(r => by[r.meal] && by[r.meal].push(r));
+    const combos = [];
+    for (const b of by.b) for (const l of by.l) for (const d of by.d)
+      for (let i = 0; i < by.s.length; i++) for (let j = i + 1; j < by.s.length; j++) {
+        const m = [b, by.s[i], l, by.s[j], d];
+        combos.push({ meals: { b: b.id, s1: by.s[i].id, l: l.id, s2: by.s[j].id, d: d.id }, kcal: m.reduce((a, r) => a + r.kcal, 0), protein: m.reduce((a, r) => a + (r.protein || 0), 0) });
+      }
+    const inRange = combos.filter(x => Math.abs(x.kcal - target) <= MATCH_RANGE);
+    const pool = inRange.length >= 7 ? inRange : combos;   // not enough → closest days, portions get scaled
+    const pick = sorter => {
+      const out = [], cnt = { b: {}, l: {}, d: {} };
+      for (const x of pool.slice().sort(sorter)) {
+        if (["b", "l", "d"].some(k => (cnt[k][x.meals[k]] || 0) >= 2)) continue;   // rule 10: same lunch/dinner max twice
+        out.push(x); ["b", "l", "d"].forEach(k => cnt[k][x.meals[k]] = (cnt[k][x.meals[k]] || 0) + 1);
+        if (out.length === 7) break;
+      }
+      return out;
+    };
+    const A = pick((x, y) => Math.abs(x.kcal - target) - Math.abs(y.kcal - target));
+    const B = pick((x, y) => (y.protein - x.protein) || (Math.abs(x.kcal - target) - Math.abs(y.kcal - target)));
+    const notes = [];
+    if (removed) notes.push(ag("sg_dislike", { n: removed, w: c.food }));
+    if (inRange.length < 7 && A.length) notes.push(ag("sg_portion", { f: portionFactor(target, A[0].meals) }));
+    return { A, B, notes };
+  }
+
+  // ---- the suggestion card in the client's page ----
+  const sgCard = document.createElement("div");
+  sgCard.className = "card agent-card"; sgCard.id = "agent-card"; sgCard.style.marginTop = "12px";
+  sgCard.innerHTML = '<h3 style="margin-top:0" id="sg-title"></h3><p class="muted" id="sg-note" style="margin-top:0"></p>' +
+    '<button class="btn" id="sg-btn" type="button"></button><div id="sg-out"></div>';
+  const kcalBox = document.querySelector(".kcal-set");
+  kcalBox.closest(".card").after(sgCard);
+  let sgState = null, sgOpt = "A", approveArmed = false;
+  function sgLabels() { $("sg-title").textContent = ag("sg_title"); $("sg-note").textContent = ag("sg_note"); $("sg-btn").textContent = ag("sg_btn"); }
+  sgLabels();
+  async function runSuggest() {
+    const c = clientById(openClient); if (!c) return;
+    busy($("sg-btn"), true);
+    let ib = null;
+    try { const ibs = await DB.select("inbody", "select=*&user_id=eq." + c.id + "&order=date.desc"); ib = ibs[0] || null; } catch (e) {}
+    const k = suggestKcal(c, ib);
+    sgState = { id: c.id, k, plans: k.kcal ? suggestPlans(c, k.kcal) : null };
+    sgOpt = "A"; approveArmed = false; renderSuggest();
+    busy($("sg-btn"), false);
+  }
+  function renderSuggest() {
+    const out = $("sg-out");
+    if (!sgState || sgState.id !== openClient) { out.innerHTML = ""; return; }
+    const c = clientById(openClient), { k, plans } = sgState;
+    if (k.stop) { out.innerHTML = '<p class="note">' + esc(k.stop) + "</p>"; return; }
+    const opt = plans[sgOpt] || [];
+    const avgK = opt.length ? Math.round(opt.reduce((a, x) => a + x.kcal, 0) / opt.length) : 0;
+    const avgP = opt.length ? Math.round(opt.reduce((a, x) => a + x.protein, 0) / opt.length) : 0;
+    out.innerHTML =
+      '<ol class="sg-steps">' + k.steps.map(s => "<li>" + esc(s) + "</li>").join("") + "</ol>" +
+      '<div class="sg-kcal"><span class="muted small-label">' + esc(ag("sg_kcal")) + '</span><b><bdi dir="ltr">' + k.kcal + "</bdi> " + esc(t("kcal_short")) + "</b>" +
+      (c.kcal ? ' <span class="muted">(' + esc(ag("sg_current", { v: c.kcal })) + ")</span>" : "") + "</div>" +
+      k.flags.concat(plans.notes).map(f => '<p class="sg-flag">' + esc(f) + "</p>").join("") +
+      '<div class="tabs" style="margin-top:10px"><button class="tab' + (sgOpt === "A" ? " active" : "") + '" data-sgopt="A">' + esc(ag("sg_optA")) + '</button><button class="tab' + (sgOpt === "B" ? " active" : "") + '" data-sgopt="B">' + esc(ag("sg_optB")) + "</button></div>" +
+      '<p class="muted">' + esc(ag("sg_avg", { k: avgK, p: avgP })) + "</p>" +
+      '<div class="mini-plans">' + opt.map((x, i) => '<div class="mini-plan"><b>' + esc(ag("sg_day")) + " " + (i + 1) + "</b> <small class='muted'>" + x.kcal + " " + esc(t("kcal_short")) + " · " + x.protein + "g</small>" + mealNamesHTML(x.meals) + "</div>").join("") + "</div>" +
+      '<div class="btn-row" style="justify-content:flex-start;margin-top:12px"><button class="btn" id="sg-approve">' + esc(approveArmed ? ag("sg_replace") : ag("sg_approve")) + '</button><button class="btn outline" id="sg-kcal-only">' + esc(ag("sg_use_kcal")) + "</button></div>" +
+      '<p class="muted" id="sg-msg"></p>';
+    out.querySelectorAll("[data-sgopt]").forEach(b => b.addEventListener("click", () => { sgOpt = b.dataset.sgopt; approveArmed = false; renderSuggest(); }));
+    $("sg-kcal-only").addEventListener("click", async () => { await changeClient({ kcal: k.kcal }); renderSuggest(); $("sg-msg").textContent = ag("sg_done"); });
+    $("sg-approve").addEventListener("click", async () => {
+      if ((c.plans || []).length && !approveArmed) { approveArmed = true; return renderSuggest(); }
+      const newPlans = opt.map((x, i) => ({ name: ag("sg_day") + " " + (i + 1) + " · " + k.kcal, kcal: k.kcal, meals: x.meals, source: "agent" }));
+      approveArmed = false;
+      await changeClient({ kcal: k.kcal, plans: newPlans, today: null });
+      renderSuggest(); $("sg-msg").textContent = ag("sg_done");
+    });
+  }
+  $("sg-btn").addEventListener("click", runSuggest);
+
+  // ---- 2) clients who need attention ----
+  const attCard = document.createElement("div");
+  attCard.className = "card attention-card"; attCard.id = "attention-card"; attCard.style.marginBottom = "14px";
+  $("clients-list").prepend(attCard);
+  function lastActive(c) {
+    const dates = (c.history || []).map(h => h.date).concat(c.today ? [c.today.date] : []).filter(Boolean).sort();
+    return dates.length ? dates[dates.length - 1] : null;
+  }
+  function attentionList() {
+    const items = [];
+    CLIENTS.forEach(c => {
+      const add = (level, text) => items.push({ c, level, text });
+      if (!isPaid(c)) { if (c.pay_status === "pending" && c.receipt_path) add(2, ag("att_pay")); return; }
+      if (!c.kcal) { const d = daysSince(c.created_at); add(d >= 2 ? 3 : 2, ag("att_kcal", { d })); if (healthFlag(c)) add(3, ag("att_health")); return; }
+      if ((c.plans || []).length < 7) { const d = daysSince(c.created_at); if (d >= 3) add(2, ag("att_days", { d })); return; }
+      const la = lastActive(c);
+      if (la) { const d = daysSince(la + "T12:00:00"); if (d >= 3) add(d >= 7 ? 3 : 2, ag("att_idle", { d })); }
+      const last7 = (c.history || []).filter(h => !h.off).slice(-7);
+      const s = last7.reduce((a, h) => a + (h.skipped || 0), 0), k = last7.reduce((a, h) => a + (h.done || 0), 0);
+      if (last7.length >= 3 && s > k) add(2, ag("att_skip", { s, k }));
+      if (c.inbody_requested && daysSince(c.inbody_requested_at) >= 5) add(1, ag("att_ib", { d: daysSince(c.inbody_requested_at) }));
+    });
+    return items.sort((a, b) => b.level - a.level);
+  }
+  function renderAttention() {
+    const items = attentionList();
+    attCard.innerHTML = '<h3 style="margin-top:0">' + esc(ag("att_title")) + "</h3>" +
+      (items.length ? '<ul class="att-list">' + items.map(x => '<li class="lvl-' + x.level + '"><span class="grow"><b>' + esc(x.c.name) + "</b> — " + esc(x.text) + '</span><button class="btn outline small" data-att="' + esc(x.c.id) + '">' + esc(t("ad_open")) + "</button></li>").join("") + "</ul>"
+        : '<p class="muted" style="margin:0">' + esc(ag("att_none")) + "</p>");
+    attCard.hidden = !CLIENTS.length;
+    attCard.querySelectorAll("[data-att]").forEach(b => b.addEventListener("click", () => { openClient = b.dataset.att; renderClients(); }));
+  }
+  document.addEventListener("langchange", () => { sgLabels(); renderSuggest(); });
+  window.__agent = { suggestKcal, suggestPlans, attentionList, healthFlag, dislikeWords };   // used by the test file
+
   function renderAll() { renderSchedules(); renderRecipes(); renderClients(); renderDayEditor(); updateBadge(); }
   document.addEventListener("langchange", () => { if (!$("admin-view").hidden) renderAll(); });
   gate();
