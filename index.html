@@ -22,7 +22,7 @@
     <nav>
       <a href="index.html" data-i18n="nav_home">الرئيسية</a>
       <a href="index.html#packages" data-i18n="nav_packages">الباقات</a>
-      <a href="start.html" data-i18n="nav_start">ابدأ الآن</a>
+      <a href="start.html" class="guest-only" data-i18n="nav_start">ابدأ الآن</a>
       <a href="portal.html" data-i18n="nav_portal">حسابي</a>
       <button class="lang-btn" id="lang-btn" data-i18n="lang_btn">English</button>
     </nav>
@@ -33,7 +33,8 @@
       <h1 data-i18n="hero_title">كُل صح. وعِش بتوازن.</h1>
       <p data-i18n="hero_sub"></p>
       <div class="btn-row">
-        <a class="btn" href="start.html" data-i18n="hero_start">ابدأ الآن</a>
+        <a class="btn guest-only" href="start.html" data-i18n="hero_start">ابدأ الآن</a>
+        <a class="btn member-only" href="portal.html" data-i18n="btn_portal">روح لحسابي</a>
         <a class="btn wa" href="#" id="wa-hero" data-i18n="hero_whatsapp">راسلنا على واتساب</a>
       </div>
     </section>
@@ -53,27 +54,28 @@
       <div class="packages">
         <div class="card package">
           <h3 data-i18n="pk_basic_name"></h3>
+          <div class="price">180 <small><span data-i18n="sar"></span> / <span data-i18n="pk_period"></span></small></div>
+          <ul class="features">
+            <li data-i18n="pk_f1"></li>
+            <li data-i18n="pk_f2"></li>
+            <li data-i18n="pk_f3"></li>
+            <li data-i18n="pk_f4"></li>
+          </ul>
+          <a class="btn outline guest-only" href="start.html?package=basic" data-i18n="pk_choose"></a>
+        </div>
+        <div class="card package featured">
+          <span class="badge" data-i18n="pk_popular"></span>
+          <h3 data-i18n="pk_plus_name"></h3>
           <div class="price">250 <small><span data-i18n="sar"></span> / <span data-i18n="pk_period"></span></small></div>
           <ul class="features">
             <li data-i18n="pk_f1"></li>
             <li data-i18n="pk_f2"></li>
             <li data-i18n="pk_f3"></li>
             <li data-i18n="pk_f4"></li>
-          </ul>
-          <a class="btn outline" href="start.html?package=basic" data-i18n="pk_choose"></a>
-        </div>
-        <div class="card package featured">
-          <span class="badge" data-i18n="pk_popular"></span>
-          <h3 data-i18n="pk_plus_name"></h3>
-          <div class="price">300 <small><span data-i18n="sar"></span> / <span data-i18n="pk_period"></span></small></div>
-          <ul class="features">
-            <li data-i18n="pk_f1"></li>
-            <li data-i18n="pk_f2"></li>
-            <li data-i18n="pk_f3"></li>
-            <li data-i18n="pk_f4"></li>
+            <li data-i18n="pk_f6"></li>
             <li data-i18n="pk_f5"></li>
           </ul>
-          <a class="btn" href="start.html?package=plus" data-i18n="pk_choose"></a>
+          <a class="btn guest-only" href="start.html?package=plus" data-i18n="pk_choose"></a>
         </div>
       </div>
     </section>

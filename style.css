@@ -1,5 +1,7 @@
 /* Mizan Nutrition styles */
 [hidden] { display: none !important; }
+/* signed-in clients don't see the sign-up buttons; guests don't see account-only buttons */
+body.signed-in .guest-only, body:not(.signed-in) .member-only { display: none !important; }
 :root {
   /* Nojood brand: deep green + apricot on warm cream */
   --green: #2e5c38;

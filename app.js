@@ -10,8 +10,8 @@ const PAYMENT_ENABLED = false;
 const isPaid = c => !!c && (c.paid || !PAYMENT_ENABLED);
 const MATCH_RANGE = 150;      // a schedule "matches" a client if its calories are within ± this many kcal
 const PACKAGES = {
-  basic: { price: 250, nameKey: "pk_basic_name", workout: false },
-  plus:  { price: 300, nameKey: "pk_plus_name",  workout: true  }
+  basic: { price: 180, nameKey: "pk_basic_name", workout: false, custom: false },  // ready plans only
+  plus:  { price: 250, nameKey: "pk_plus_name",  workout: true,  custom: true  }   // + workout plan + build own days
 };
 
 // ===== Small helpers =====
@@ -32,6 +32,9 @@ function friendlyError(e) {
   if (/failed to fetch|network/i.test(m)) return t("err_network");
   return t("err_generic");
 }
+// show/hide the "Start now" buttons depending on whether a client is signed in
+function markSignedIn(on) { document.body.classList.toggle("signed-in", !!on); }
+
 function busy(btn, on) { if (!btn) return; btn.disabled = on; btn.classList.toggle("is-busy", on); }
 
 // Read a receipt: photos are shrunk to keep them small, PDFs are kept as they are (max ~1.5 MB)
@@ -218,6 +221,7 @@ if ($("info-form")) {
       const existing = await DB.select("profiles", "select=id&id=eq." + user.id);
       if (existing.length) await DB.update("profiles", user.id, row); else await DB.insert("profiles", row);
       if (ibData) await DB.insert("inbody", { user_id: user.id, weight: client.weight, fat: ibData.fat, muscle: ibData.muscle, bmr: ibData.bmr });
+      markSignedIn(true);
       show(5);
     } catch (e) {
       errEl.textContent = friendlyError(e);
@@ -282,6 +286,7 @@ if ($("login-form")) {
 
   function render() {
     const c = me;
+    markSignedIn(!!c);
     $("login-view").hidden = !!c;
     $("dash-view").hidden = !c;
     if (!c) return;
@@ -298,7 +303,7 @@ if ($("login-form")) {
     $("v-build").hidden = !(paid && c.kcal && plans.length < 7);
     $("v-pick").hidden = !(paid && plans.length >= 7 && !st);
     $("v-plan").hidden = !(paid && st);
-    $("workout-card").hidden = !(paid && (c.workout_link || (PACKAGES[c.package] && PACKAGES[c.package].workout)));
+    $("workout-card").hidden = !(paid && PACKAGES[c.package] && PACKAGES[c.package].workout);
     renderWorkout(c);
     if (!$("v-build").hidden) renderBuild(c);
     if (!$("v-pick").hidden) renderPick(c);
@@ -314,6 +319,10 @@ if ($("login-form")) {
 
   // ---------- Step 1: choose 7 days ----------
   function renderBuild(c) {
+    // only the plus package can build its own days; basic chooses from the ready plans
+    const canCustom = !!(PACKAGES[c.package] && PACKAGES[c.package].custom);
+    if (!canCustom) tab = "ready";
+    document.querySelector('[data-btab="custom"]').hidden = !canCustom;
     $("b-count").textContent = draft.length;
     $("b-kcal").textContent = (c.kcal || 0).toLocaleString();
     document.querySelectorAll("[data-btab]").forEach(b => b.classList.toggle("active", b.dataset.btab === tab));
@@ -674,6 +683,7 @@ if ($("admin-login")) {
     $("wa-client").href = waLink(saudiNumber(c.phone), (LANG === "ar" ? "مرحباً " : "Hi ") + (c.name || "").split(" ")[0] + "، " + t("ib_alert_text"));
     $("cd-ib-pending").hidden = !c.inbody_requested;
     $("cd-workout").value = c.workout_link || "";
+    $("cd-workout-card").hidden = !(PACKAGES[c.package] && PACKAGES[c.package].workout);  // basic package has no workout plan
     $("cd-kcal").value = c.kcal || "";
     $("cd-kcal-msg").textContent = "";
     $("cd-kcal-need").hidden = !!c.kcal;
@@ -790,3 +800,18 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
   });
   window.addEventListener("appinstalled", () => { bar.hidden = true; });
 })();
+
+// ===== Clients' site: hide sign-up for signed-in clients =====
+if (!$("admin-view") && !$("login-form")) {
+  (async () => {
+    try {
+      const u = await DB.user();
+      if (!u) return;
+      const rows = await DB.select("profiles", "select=id,role&id=eq." + u.id);
+      const isClient = rows[0] && rows[0].role !== "admin";
+      markSignedIn(isClient);
+      // already has an account → the sign-up page sends them straight to their account
+      if (isClient && $("info-form") && $("step-1").classList.contains("show")) location.replace("portal.html");
+    } catch (e) {}
+  })();
+}
