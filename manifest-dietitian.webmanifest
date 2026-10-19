@@ -1,14 +1,14 @@
 {
   "id": "./dietitian.html",
-  "name": "Mizan Pro | ميزان للأخصائية",
-  "short_name": "ميزان برو",
+  "name": "Nojood Pro | نجود للأخصائية",
+  "short_name": "نجود برو",
   "description": "Dietitian app: clients, schedules, recipes, payments and InBody.",
   "start_url": "./dietitian.html",
   "scope": "./dietitian",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f5f8f3",
-  "theme_color": "#2f4a3a",
+  "background_color": "#fbf8f2",
+  "theme_color": "#2e5c38",
   "lang": "ar",
   "dir": "rtl",
   "icons": [

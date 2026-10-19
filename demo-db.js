@@ -18,7 +18,7 @@ function exitDemo() {
 
 if (isDemo()) {
   const day = d => { const x = new Date(); x.setDate(x.getDate() - d); return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0"); };
-  const receiptSVG = "data:image/svg+xml;charset=utf-8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="420" height="560"><rect width="100%" height="100%" fill="#fff"/><rect x="20" y="20" width="380" height="70" rx="10" fill="#1f6f4a"/><text x="210" y="65" font-family="Arial" font-size="26" fill="#fff" text-anchor="middle">Transfer receipt</text><text x="40" y="150" font-family="Arial" font-size="22" fill="#333">Amount: 300 SAR</text><text x="40" y="195" font-family="Arial" font-size="20" fill="#555">To: Mizan Nutrition</text><text x="40" y="235" font-family="Arial" font-size="20" fill="#555">From: Noura K.</text><text x="40" y="275" font-family="Arial" font-size="20" fill="#555">Status: Completed ✓</text><text x="210" y="520" font-family="Arial" font-size="16" fill="#999" text-anchor="middle">DEMO</text></svg>');
+  const receiptSVG = "data:image/svg+xml;charset=utf-8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="420" height="560"><rect width="100%" height="100%" fill="#fff"/><rect x="20" y="20" width="380" height="70" rx="10" fill="#1f6f4a"/><text x="210" y="65" font-family="Arial" font-size="26" fill="#fff" text-anchor="middle">Transfer receipt</text><text x="40" y="150" font-family="Arial" font-size="22" fill="#333">Amount: 300 SAR</text><text x="40" y="195" font-family="Arial" font-size="20" fill="#555">To: Nojood Nutrition</text><text x="40" y="235" font-family="Arial" font-size="20" fill="#555">From: Noura K.</text><text x="40" y="275" font-family="Arial" font-size="20" fill="#555">Status: Completed ✓</text><text x="210" y="520" font-family="Arial" font-size="16" fill="#999" text-anchor="middle">DEMO</text></svg>');
   const SEVEN = [
     { name: "يوم متوازن ١٣٠٠", kcal: 1300, meals: { b: "b3", s1: "s1", l: "l3", s2: "s5", d: "d1" }, source: "ready" },
     { name: "يوم مدى ١٣٥٠", kcal: 1350, meals: { b: "b1", s1: "s4", l: "l4", s2: "s3", d: "d4" }, source: "ready" },
@@ -30,7 +30,7 @@ if (isDemo()) {
   ];
   const seed = () => ({
     profiles: [
-      { id: "demo-admin", role: "admin", name: "د. هدى (تجريبي)", email: "pro@demo.sa", paid: true, pay_status: "confirmed", plans: [], history: [], progress: {} },
+      { id: "demo-admin", role: "admin", name: "نجود (تجريبي)", email: "pro@demo.sa", paid: true, pay_status: "confirmed", plans: [], history: [], progress: {} },
       { id: "demo-sara", role: "client", name: "سارة أحمد", email: "sara@demo.sa", phone: "0500000000", sex: "female", age: 27, height: 162, weight: 68, activity: 1.375, goal: "lose",
         kcal: 1340, bmr: 1400, package: "plus", paid: true, pay_status: "confirmed", plans: SEVEN, today: { date: day(0), plan: 0, progress: { b: "done" } },
         history: [{ date: day(3), plan: 1, done: 5, skipped: 0 }, { date: day(2), plan: 3, done: 4, skipped: 1 }, { date: day(1), plan: 2, done: 5, skipped: 0 }],

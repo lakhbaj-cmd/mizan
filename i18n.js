@@ -4,7 +4,7 @@
 
 const I18N = {
   en: {
-    brand: "Mizan Nutrition",
+    brand: "Nojood Nutrition",
     nav_home: "Home",
     nav_packages: "Packages",
     nav_start: "Start now",
@@ -39,7 +39,7 @@ const I18N = {
     pk_choose: "Choose this package",
 
     about_title: "About your dietitian",
-    about_text: "[Dietitian name] is a qualified dietitian who helps clients lose weight, gain weight, or simply eat healthier without giving up the food they love. Every plan is made by hand for one person, not copied from a template.",
+    about_text: "Nojood is a qualified dietitian who helps clients lose weight, gain weight, or simply eat healthier without giving up the food they love. Every plan is made by hand for one person, not copied from a template.",
 
     footer_note: "Your calories and plan are set by your dietitian. This site does not replace medical advice.",
 
@@ -61,10 +61,10 @@ const I18N = {
     f_height: "Height (cm)",
     f_weight: "Weight (kg)",
     f_activity: "Activity level",
-    act_1: "Little or no exercise",
-    act_2: "Light exercise 1–3 days a week",
-    act_3: "Moderate exercise 3–5 days a week",
-    act_4: "Hard exercise 6–7 days a week",
+    act_1: "No exercise",
+    act_2: "Exercise 1–3 days a week",
+    act_3: "Exercise 3–5 days a week",
+    act_4: "Exercise 6–7 days a week",
     f_goal: "Goal",
     goal_lose: "Lose weight",
     goal_keep: "Keep my weight",
@@ -154,7 +154,7 @@ const I18N = {
     ib_history: "InBody results", ib_none: "No InBody results yet.", ib_requested: "InBody requested", ib_last: "Last InBody",
     ad_send_ib: "Send InBody reminder", ad_ib_sent: "Reminder sent. The client will see it in their portal.", ad_wa_client: "Also message on WhatsApp",
     ad_open: "Open", ad_back: "Back to clients", ad_info: "Client info", ad_never: "Never",
-    app_install: "Install the Mizan app", app_ios: "To install the app: tap Share, then \"Add to Home Screen\".", app_close: "Close",
+    app_install: "Install the Nojood app", app_ios: "To install the app: tap Share, then \"Add to Home Screen\".", app_close: "Close",
     tr_step1: "Transfer the amount to the account below from your bank app (instant transfer arrives in seconds).",
     tr_step2: "Take a screenshot of the transfer receipt.", tr_step3: "Upload the receipt here and press Send.",
     tr_bank: "Bank", tr_holder: "Account name", tr_copy: "Copy", tr_copied: "Copied ✓", tr_copy_amount: "Copy amount",
@@ -172,7 +172,7 @@ const I18N = {
     pw_label: "Password", loading: "Loading…", ad_create: "Create account", ad_have_account: "I already have an account — sign in",
     ad_need_account: "First time? Create the dietitian account", ad_refresh: "Refresh",
     ad_not_admin: "You're signed in, but this account isn't activated as the dietitian yet. Once it's activated, refresh this page.",
-    pro_badge: "Pro", app_install_pro: "Install the Mizan Pro app", cd_no_sched: "Hasn't chosen a schedule yet.", cd_meals: "Meals done", cd_skipped: "Skipped", cd_last: "Last meal",
+    pro_badge: "Pro", app_install_pro: "Install the Nojood Pro app", cd_no_sched: "Hasn't chosen a schedule yet.", cd_meals: "Meals done", cd_skipped: "Skipped", cd_last: "Last meal",
     meal_s1: "Snack 1", b_choose: "Choose food", meal_s2: "Snack 2",
     b_title: "Choose your 7 days for the month", b_sub: "Pick ready-made days or build your own. Recipes appear after you choose all 7.",
     b_count: "Chosen:", tab_ready: "Ready-made days", tab_custom: "Build my own day", b_add: "Add", b_add_day: "Add this day",
@@ -199,7 +199,7 @@ const I18N = {
   },
 
   ar: {
-    brand: "ميزان للتغذية",
+    brand: "نجود للتغذية",
     nav_home: "الرئيسية",
     nav_packages: "الباقات",
     nav_start: "ابدأ الآن",
@@ -234,7 +234,7 @@ const I18N = {
     pk_choose: "اختر هذه الباقة",
 
     about_title: "عن أخصائية التغذية",
-    about_text: "[اسم الأخصائية] أخصائية تغذية تساعد عملاءها في نزول الوزن أو زيادته أو الأكل الصحي بدون ما يتركون الأكل اللي يحبونه. كل خطة تنسوّى لشخص واحد، مو منسوخة من قالب.",
+    about_text: "نجود أخصائية تغذية تساعد عملاءها في نزول الوزن أو زيادته أو الأكل الصحي بدون ما يتركون الأكل اللي يحبونه. كل خطة تنسوّى لشخص واحد، مو منسوخة من قالب.",
 
     footer_note: "سعراتك وخطتك تحددها الأخصائية. الموقع لا يغني عن الاستشارة الطبية.",
 
@@ -255,10 +255,10 @@ const I18N = {
     f_height: "الطول (سم)",
     f_weight: "الوزن (كجم)",
     f_activity: "مستوى النشاط",
-    act_1: "قليل أو بدون رياضة",
-    act_2: "رياضة خفيفة ١–٣ أيام بالأسبوع",
-    act_3: "رياضة متوسطة ٣–٥ أيام بالأسبوع",
-    act_4: "رياضة قوية ٦–٧ أيام بالأسبوع",
+    act_1: "بدون رياضة",
+    act_2: "رياضة ١–٣ أيام بالأسبوع",
+    act_3: "رياضة ٣–٥ أيام بالأسبوع",
+    act_4: "رياضة ٦–٧ أيام بالأسبوع",
     f_goal: "الهدف",
     goal_lose: "نزول الوزن",
     goal_keep: "المحافظة على الوزن",
@@ -347,7 +347,7 @@ const I18N = {
     ib_history: "نتائج InBody", ib_none: "ما فيه نتائج InBody للحين.", ib_requested: "مطلوب InBody", ib_last: "آخر InBody",
     ad_send_ib: "إرسال تنبيه InBody", ad_ib_sent: "انرسل التنبيه. العميل بيشوفه في حسابه.", ad_wa_client: "ارسلي له على واتساب كمان",
     ad_open: "فتح", ad_back: "رجوع للعملاء", ad_info: "معلومات العميل", ad_never: "أبداً",
-    app_install: "حمّل تطبيق ميزان", app_ios: "عشان تحمّل التطبيق: اضغط زر المشاركة، بعدين \"إضافة إلى الشاشة الرئيسية\".", app_close: "إغلاق",
+    app_install: "حمّل تطبيق نجود", app_ios: "عشان تحمّل التطبيق: اضغط زر المشاركة، بعدين \"إضافة إلى الشاشة الرئيسية\".", app_close: "إغلاق",
     tr_step1: "حوّل المبلغ على الحساب اللي تحت من تطبيق بنكك (التحويل الفوري يوصل في ثواني).",
     tr_step2: "صوّر إيصال التحويل (سكرين شوت).", tr_step3: "ارفع الإيصال هنا واضغط إرسال.",
     tr_bank: "البنك", tr_holder: "اسم صاحب الحساب", tr_copy: "نسخ", tr_copied: "تم النسخ ✓", tr_copy_amount: "نسخ المبلغ",
@@ -365,7 +365,7 @@ const I18N = {
     pw_label: "كلمة المرور", loading: "جاري التحميل…", ad_create: "إنشاء الحساب", ad_have_account: "عندي حساب — تسجيل الدخول",
     ad_need_account: "أول مرة؟ أنشئي حساب الأخصائية", ad_refresh: "تحديث",
     ad_not_admin: "سجّلتي دخول، بس الحساب لسا ما تفعّل كحساب الأخصائية. أول ما يتفعّل، حدّثي الصفحة.",
-    pro_badge: "برو", app_install_pro: "حمّلي تطبيق ميزان برو", cd_no_sched: "لسا ما اختار جدول.", cd_meals: "وجبات خلّصها", cd_skipped: "تخطّاها", cd_last: "آخر وجبة",
+    pro_badge: "برو", app_install_pro: "حمّلي تطبيق نجود برو", cd_no_sched: "لسا ما اختار جدول.", cd_meals: "وجبات خلّصها", cd_skipped: "تخطّاها", cd_last: "آخر وجبة",
     meal_s1: "سناك ١", b_choose: "اختر أكل", meal_s2: "سناك ٢",
     b_title: "اختر ٧ أيام لشهرك", b_sub: "اختر من الأيام الجاهزة أو سوّ يومك بنفسك. الوصفات تظهر بعد ما تكمّل السبعة.",
     b_count: "اخترت:", tab_ready: "أيام جاهزة", tab_custom: "سوّ يومك بنفسك", b_add: "أضف", b_add_day: "أضف هذا اليوم",

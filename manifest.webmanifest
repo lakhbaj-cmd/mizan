@@ -1,13 +1,13 @@
 {
-  "name": "Mizan | ميزان",
-  "short_name": "ميزان",
+  "name": "Nojood Nutrition | نجود للتغذية",
+  "short_name": "نجود",
   "description": "Personal nutrition plans, meal schedules and progress with your dietitian.",
   "start_url": "./portal.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f5f8f3",
-  "theme_color": "#4f7a5f",
+  "background_color": "#fbf8f2",
+  "theme_color": "#2e5c38",
   "lang": "ar",
   "dir": "rtl",
   "icons": [
