@@ -20,13 +20,13 @@ if (isDemo()) {
   const day = d => { const x = new Date(); x.setDate(x.getDate() - d); return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0"); };
   const receiptSVG = "data:image/svg+xml;charset=utf-8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="420" height="560"><rect width="100%" height="100%" fill="#fff"/><rect x="20" y="20" width="380" height="70" rx="10" fill="#1f6f4a"/><text x="210" y="65" font-family="Arial" font-size="26" fill="#fff" text-anchor="middle">Transfer receipt</text><text x="40" y="150" font-family="Arial" font-size="22" fill="#333">Amount: 250 SAR</text><text x="40" y="195" font-family="Arial" font-size="20" fill="#555">To: Nojood Nutrition</text><text x="40" y="235" font-family="Arial" font-size="20" fill="#555">From: Noura K.</text><text x="40" y="275" font-family="Arial" font-size="20" fill="#555">Status: Completed ✓</text><text x="210" y="520" font-family="Arial" font-size="16" fill="#999" text-anchor="middle">DEMO</text></svg>');
   const SEVEN = [
-    { name: "يوم متوازن ١٣٠٠", kcal: 1300, meals: { b: "b3", s1: "s1", l: "l3", s2: "s5", d: "d1" }, source: "ready" },
-    { name: "يوم مدى ١٣٥٠", kcal: 1350, meals: { b: "b1", s1: "s4", l: "l4", s2: "s3", d: "d4" }, source: "ready" },
-    { name: "يوم خفيف ١٢٠٠", kcal: 1200, meals: { b: "b5", s1: "s5", l: "l4", s2: "s4", d: "d5" }, source: "ready" },
-    { name: "يومي ١", kcal: 1340, meals: { b: "b2", s1: "s3", l: "l2", s2: "s5", d: "d5" }, source: "custom" },
-    { name: "يومي ٢", kcal: 1340, meals: { b: "b4", s1: "s4", l: "l3", s2: "s1", d: "d1" }, source: "custom" },
-    { name: "يوم متوازن ١٣٠٠", kcal: 1300, meals: { b: "b3", s1: "s1", l: "l3", s2: "s5", d: "d1" }, source: "ready" },
-    { name: "يومي ٣", kcal: 1340, meals: { b: "b5", s1: "s2", l: "l4", s2: "s5", d: "d4" }, source: "custom" }
+    { name: "1300", kcal: 1300, meals: { b: "b3", s1: "s4", l: "l4", s2: "s6", d: "d4" }, source: "ready" },
+    { name: "1350", kcal: 1350, meals: { b: "b4", s1: "s1", l: "l13", s2: "s10", d: "d1" }, source: "ready" },
+    { name: "1200", kcal: 1200, meals: { b: "b1", s1: "s6", l: "l2", s2: "s9", d: "d8" }, source: "ready" },
+    { name: "1340", kcal: 1340, meals: { b: "b7", s1: "s3", l: "l9", s2: "s5", d: "d10" }, source: "custom" },
+    { name: "1340", kcal: 1340, meals: { b: "b1", s1: "s6", l: "l14", s2: "s10", d: "d5" }, source: "custom" },
+    { name: "1450", kcal: 1450, meals: { b: "b2", s1: "s3", l: "l8", s2: "s4", d: "d7" }, source: "ready" },
+    { name: "1340", kcal: 1340, meals: { b: "b3", s1: "s2", l: "l11", s2: "s4", d: "d6" }, source: "custom" }
   ];
   const seed = () => ({
     profiles: [
