@@ -103,8 +103,22 @@ function mealNamesHTML(meals) {
 }
 function todayStr() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
 // Where the client is today
+// is today marked as an off day by the client?
+const isOffToday = c => !!(c && c.today && c.today.off && c.today.date === todayStr());
+// move the current day (if any) into the history list
+function archiveDay(c) {
+  const history = (c.history || []).slice();
+  if (c.today) {
+    if (c.today.off) history.push({ date: c.today.date, off: true });
+    else {
+      const pr = c.today.progress || {};
+      history.push({ date: c.today.date, plan: c.today.plan, done: Object.values(pr).filter(v => v === "done").length, skipped: Object.values(pr).filter(v => v === "skip").length });
+    }
+  }
+  return history.slice(-60);
+}
 function dayState(c) {
-  const today = c.today && c.today.date === todayStr() ? c.today : null;
+  const today = c.today && !c.today.off && c.today.date === todayStr() ? c.today : null;
   const plan = today ? (c.plans || [])[today.plan] : null;
   if (!plan) return null;
   const prog = today.progress || {};
@@ -301,7 +315,9 @@ if ($("login-form")) {
     const noKcal = paid && !c.kcal;
     $("v-kcal-wait").hidden = !noKcal;
     $("v-build").hidden = !(paid && c.kcal && plans.length < 7);
-    $("v-pick").hidden = !(paid && plans.length >= 7 && !st);
+    const off = paid && plans.length >= 7 && isOffToday(c);
+    $("v-off").hidden = !off;
+    $("v-pick").hidden = !(paid && plans.length >= 7 && !st && !off);
     $("v-plan").hidden = !(paid && st);
     $("workout-card").hidden = !(paid && PACKAGES[c.package] && PACKAGES[c.package].workout);
     renderWorkout(c);
@@ -399,12 +415,7 @@ if ($("login-form")) {
       mealNamesHTML(p.meals) + '<button class="btn small" data-pickday="' + i + '">' + esc(t("p_start")) + "</button></div>").join("");
     document.querySelectorAll("[data-pickday]").forEach(b => b.addEventListener("click", async () => {
       busy(b, true);
-      const history = (c.history || []).slice();
-      if (c.today && c.today.date !== todayStr()) {
-        const pr = c.today.progress || {};
-        history.push({ date: c.today.date, plan: c.today.plan, done: Object.values(pr).filter(v => v === "done").length, skipped: Object.values(pr).filter(v => v === "skip").length });
-      }
-      try { await updateMe({ today: { date: todayStr(), plan: +b.dataset.pickday, progress: {} }, history: history.slice(-60) }); }
+      try { await updateMe({ today: { date: todayStr(), plan: +b.dataset.pickday, progress: {} }, history: archiveDay(c) }); }
       finally { busy(b, false); }
     }));
   }
@@ -421,6 +432,7 @@ if ($("login-form")) {
     $("change-day").hidden = st.handled > 0;
     $("next-card").hidden = !st.next;
     $("finished-card").hidden = !!st.next;
+    document.querySelector("#v-plan [data-offday]").hidden = !st.next;
     if (st.next && st.next.recipe) {
       const r = st.next.recipe;
       $("n-type").textContent = slotLabel(st.next.k);
@@ -447,6 +459,19 @@ if ($("login-form")) {
   $("done-btn").addEventListener("click", () => mark("done", $("done-btn")));
   $("skip-btn").addEventListener("click", () => mark("skip", $("skip-btn")));
   $("change-day").addEventListener("click", async () => { await updateMe({ today: null }); });
+  // finished the day → save it and choose the next plan from the 7
+  $("next-sched").addEventListener("click", async () => {
+    busy($("next-sched"), true);
+    try { await updateMe({ today: null, history: archiveDay(me) }); } finally { busy($("next-sched"), false); }
+  });
+  // off day: no meals today (a started day with progress is kept in the history)
+  document.querySelectorAll("[data-offday]").forEach(b => b.addEventListener("click", async () => {
+    busy(b, true);
+    const started = me.today && !me.today.off && Object.keys(me.today.progress || {}).length;
+    const history = started ? archiveDay(me) : (me.history || []);
+    try { await updateMe({ today: { date: todayStr(), off: true }, history }); } finally { busy(b, false); }
+  }));
+  $("off-cancel").addEventListener("click", async () => { await updateMe({ today: null }); });
 
   $("ib-submit").addEventListener("click", async () => {
     const num = id => { const v = parseFloat($(id).value); return isNaN(v) ? null : v; };
@@ -649,7 +674,7 @@ if ($("admin-login")) {
   function clientById(id) { return CLIENTS.find(c => c.id === id); }
   function todayText(c) {
     const st = (c.plans || []).length >= 7 ? dayState(c) : null;
-    return st ? st.done + " / " + SLOTS.length : "—";
+    return st ? st.done + " / " + SLOTS.length : isOffToday(c) ? "🌿 " + esc(t("off_title")) : "—";
   }
   function renderClients() {
     $("no-clients").hidden = CLIENTS.length > 0;
@@ -697,12 +722,13 @@ if ($("admin-login")) {
       const st = plans.length >= 7 ? dayState(c) : null;
       const planCards = plans.slice(0, 7).map((p, i) => '<div class="mini-plan' + (st && st.today.plan === i ? " is-today" : "") + '"><b>' + esc(t("pt_day")) + " " + (i + 1) + " · " + esc(p.name) + "</b> <small class='muted'>" + p.kcal + " " + esc(t("kcal_short")) + "</small>" + mealNamesHTML(p.meals) + "</div>").join("");
       const hist = (c.history || []).slice().reverse().slice(0, 14);
-      const histRows = (st ? [{ date: st.today.date, plan: st.today.plan, done: st.done, skipped: st.slots.filter(x => x.status === "skip").length, isToday: true }] : []).concat(hist);
-      $("cd-progress").innerHTML = (st ? "<p><b>" + esc(t("ad_today")) + ":</b> " + esc(st.plan.name) + " — " + st.done + " / " + SLOTS.length + " " + esc(t("h_meals")) + "</p>" : "") +
+      const offNow = isOffToday(c);
+      const histRows = (st ? [{ date: st.today.date, plan: st.today.plan, done: st.done, skipped: st.slots.filter(x => x.status === "skip").length, isToday: true }] : offNow ? [{ date: c.today.date, off: true, isToday: true }] : []).concat(hist);
+      $("cd-progress").innerHTML = (st ? "<p><b>" + esc(t("ad_today")) + ":</b> " + esc(st.plan.name) + " — " + st.done + " / " + SLOTS.length + " " + esc(t("h_meals")) + "</p>" : offNow ? "<p><b>" + esc(t("ad_today")) + ":</b> 🌿 " + esc(t("off_title")) + "</p>" : "") +
         "<div class='mini-plans'>" + planCards + "</div>" +
         "<h4>" + esc(t("ad_history")) + "</h4>" +
         (histRows.length ? "<div class='table-wrap'><table><tr><th>" + [t("h_date"), t("h_plan"), t("h_meals"), t("cd_skipped")].map(esc).join("</th><th>") + "</th></tr>" +
-          histRows.map(h => "<tr><td>" + esc(h.date) + (h.isToday ? " (" + esc(t("ad_today")) + ")" : "") + "</td><td>" + esc(plans[h.plan] ? plans[h.plan].name : "—") + "</td><td>" + h.done + " / " + SLOTS.length + "</td><td>" + (h.skipped || 0) + "</td></tr>").join("") + "</table></div>"
+          histRows.map(h => "<tr><td>" + esc(h.date) + (h.isToday ? " (" + esc(t("ad_today")) + ")" : "") + "</td>" + (h.off ? "<td>🌿 " + esc(t("off_title")) + "</td><td>—</td><td>—</td>" : "<td>" + esc(plans[h.plan] ? plans[h.plan].name : "—") + "</td><td>" + h.done + " / " + SLOTS.length + "</td><td>" + (h.skipped || 0) + "</td>") + "</tr>").join("") + "</table></div>"
           : "<p class='muted'>—</p>");
     }
 

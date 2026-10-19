@@ -281,3 +281,6 @@ details p { margin: 6px 0 0; color: var(--text); }
 .kcal-set { background: var(--green-soft); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
 .kcal-set label { display: block; }
 #cd-kcal { font-size: 1.1rem; font-weight: 700; }
+
+/* off-day button above the meals */
+.off-btn { width: 100%; margin: 14px 0 0; }

@@ -125,7 +125,16 @@
       <div id="v-pick" hidden style="margin-top:14px">
         <h3 data-i18n="p_title" style="margin-bottom:4px"></h3>
         <p class="muted" style="margin-top:0" data-i18n="p_sub"></p>
+        <button class="btn outline off-btn" type="button" data-offday>🌿 <span data-i18n="off_btn"></span></button>
         <div class="sched-list" id="pick-list"></div>
+      </div>
+
+      <!-- Off day -->
+      <div class="card finished" id="v-off" hidden style="margin-top:14px">
+        <div class="avatar" style="margin:0 auto">🌿</div>
+        <h3 data-i18n="off_title"></h3>
+        <p data-i18n="off_text"></p>
+        <button class="btn outline" id="off-cancel" type="button" data-i18n="off_cancel"></button>
       </div>
 
       <!-- D: today's meals one by one -->
@@ -141,6 +150,8 @@
           <div class="bar"><div class="bar-fill" id="p-bar"></div></div>
           <button class="link-btn" id="change-day" data-i18n="t_change"></button>
         </div>
+
+        <button class="btn outline off-btn" type="button" data-offday>🌿 <span data-i18n="off_btn"></span></button>
 
         <div class="card next-meal" id="next-card">
           <p class="eyebrow" data-i18n="pt_next"></p>
@@ -158,6 +169,7 @@
         <div class="card finished" id="finished-card" hidden>
           <div class="avatar" style="margin:0 auto">🎉</div>
           <p data-i18n="t_done_today"></p>
+          <button class="btn" id="next-sched" type="button" data-i18n="t_next_sched"></button>
         </div>
 
         <div class="card" style="margin-top:14px">
