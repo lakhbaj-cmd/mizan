@@ -195,6 +195,7 @@ const I18N = {
     res_method_ib: "Calculated from your InBody results (more accurate)", res_method_std: "Calculated from your height, weight and age",
     kw_pill: "Payment confirmed ✓", kw_text: "Your dietitian is reviewing your info and calculating your calories. Once she adds them, the days that fit your calories will appear here.",
     ad_set_kcal: "Client's daily calories (you set them)", ad_need_kcal: "Needs calories", err_kcal: "Enter a number between 800 and 5000.",
+    btn_create_account: "Create my account", done_text_free: "Your account is ready! Your dietitian will review your info and set your calories, then you can choose your days.",
     soon: "Coming soon"
   },
 
@@ -388,6 +389,7 @@ const I18N = {
     res_method_ib: "محسوبة من نتائج InBody (أدق)", res_method_std: "محسوبة من طولك ووزنك وعمرك",
     kw_pill: "تم تأكيد الدفع ✓", kw_text: "الأخصائية تراجع معلوماتك وتحسب سعراتك. أول ما تضيفها، بتطلع لك الأيام اللي على سعراتك هنا.",
     ad_set_kcal: "السعرات اليومية للعميل (أنتِ تحددينها)", ad_need_kcal: "يحتاج سعرات", err_kcal: "اكتبي رقم بين ٨٠٠ و٥٠٠٠.",
+    btn_create_account: "إنشاء حسابي", done_text_free: "تم إنشاء حسابك! الأخصائية بتراجع معلوماتك وتحدد سعراتك، وبعدها تقدر تختار أيامك.",
     soon: "قريباً"
   }
 };

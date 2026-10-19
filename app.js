@@ -5,6 +5,9 @@ const WHATSAPP_NUMBER = "";   // your sister's WhatsApp, country code, no + or s
 const BANK_NAME = "[اسم البنك]";
 const ACCOUNT_NAME = "[اسم صاحبة الحساب]";
 const IBAN = "SA00 0000 0000 0000 0000 0000";
+// Payment switch: false = clients sign up without paying (for testing). Set to true to turn bank-transfer payment back on.
+const PAYMENT_ENABLED = false;
+const isPaid = c => !!c && (c.paid || !PAYMENT_ENABLED);
 const MATCH_RANGE = 150;      // a schedule "matches" a client if its calories are within ± this many kcal
 const PACKAGES = {
   basic: { price: 250, nameKey: "pk_basic_name", workout: false },
@@ -157,7 +160,7 @@ if ($("info-form")) {
   function markPackage() { document.querySelectorAll(".pick").forEach(p => p.classList.toggle("selected", p.dataset.package === chosen)); }
   document.querySelectorAll(".pick").forEach(p => p.addEventListener("click", () => { chosen = p.dataset.package; markPackage(); }));
   markPackage();
-  document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => show(+b.dataset.go)));
+  document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => { if (b.dataset.go) show(+b.dataset.go); }));
 
   $("info-form").addEventListener("submit", e => {
     e.preventDefault();
@@ -195,35 +198,45 @@ if ($("info-form")) {
     } catch (e) { $("err-4").textContent = t(e === "big" ? "err_receipt_big" : "err_receipt"); }
   });
 
-  $("pay-btn").addEventListener("click", async () => {
-    if (!receipt) { $("err-4").textContent = t("err_receipt"); return; }
-    $("err-4").textContent = "";
-    busy($("pay-btn"), true);
+  // create the account + profile (with the receipt when payment is on)
+  async function createAccount(btn, errEl) {
+    if (PAYMENT_ENABLED && !receipt) { errEl.textContent = t("err_receipt"); return; }
+    errEl.textContent = "";
+    busy(btn, true);
     try {
-      // 1) create the account (or sign in if this email already signed up a moment ago)
       let user;
       try { user = await DB.signUp(client.email, $("f-password").value); }
       catch (e) {
         if (/already|exists/i.test(e.message)) user = await DB.signIn(client.email, $("f-password").value);
         else throw e;
       }
-      // 2) upload the receipt to private storage
-      const path = await uploadReceipt(user.id, receipt);
-      // 3) save the client's profile
-      const row = {
-        id: user.id, ...client, package: chosen,
-        receipt_path: path, receipt_type: receipt.type, receipt_sender: $("sender").value.trim(),
-        receipt_amount: PACKAGES[chosen].price, receipt_date: new Date().toISOString(),
-        progress: {}, inbody_requested: false
-      };
+      const row = { id: user.id, ...client, package: chosen, progress: {}, inbody_requested: false };
+      if (PAYMENT_ENABLED) {
+        row.receipt_path = await uploadReceipt(user.id, receipt);
+        Object.assign(row, { receipt_type: receipt.type, receipt_sender: $("sender").value.trim(), receipt_amount: PACKAGES[chosen].price, receipt_date: new Date().toISOString() });
+      }
       const existing = await DB.select("profiles", "select=id&id=eq." + user.id);
       if (existing.length) await DB.update("profiles", user.id, row); else await DB.insert("profiles", row);
       if (ibData) await DB.insert("inbody", { user_id: user.id, weight: client.weight, fat: ibData.fat, muscle: ibData.muscle, bmr: ibData.bmr });
       show(5);
     } catch (e) {
-      $("err-4").textContent = friendlyError(e);
-    } finally { busy($("pay-btn"), false); }
-  });
+      errEl.textContent = friendlyError(e);
+    } finally { busy(btn, false); }
+  }
+  $("pay-btn").addEventListener("click", () => createAccount($("pay-btn"), $("err-4")));
+
+  // payment off: the package step creates the account directly
+  if (!PAYMENT_ENABLED) {
+    const nextBtn = document.querySelector('#step-3 [data-go="4"]');
+    nextBtn.removeAttribute("data-go");
+    nextBtn.dataset.i18n = "btn_create_account";
+    nextBtn.id = "create-btn";
+    const err = document.createElement("p"); err.className = "error"; err.id = "err-3";
+    nextBtn.closest(".actions").before(err);
+    nextBtn.addEventListener("click", () => createAccount(nextBtn, err));
+    const paySpan = document.querySelector('#progress span[data-step="4"]'); if (paySpan) paySpan.remove();
+    document.querySelector('#step-5 [data-i18n="tr_done_text"]').dataset.i18n = "done_text_free";
+  }
 
   $("wa-send").addEventListener("click", e => {
     if (!WHATSAPP_NUMBER) { e.preventDefault(); $("err-5").textContent = t("err_wa"); return; }
@@ -275,16 +288,17 @@ if ($("login-form")) {
     $("d-name").textContent = (c.name || "").split(" ")[0];
     $("ib-alert").hidden = !c.inbody_requested;
     const plans = c.plans || [];
-    const st = c.paid && plans.length >= 7 ? dayState(c) : null;
-    $("v-wait").hidden = !!c.paid;
+    const paid = isPaid(c);
+    const st = paid && plans.length >= 7 ? dayState(c) : null;
+    $("v-wait").hidden = paid;
     $("wait-rejected").hidden = c.pay_status !== "rejected";
     $("wait-pending").hidden = c.pay_status === "rejected";
-    const noKcal = c.paid && !c.kcal;
+    const noKcal = paid && !c.kcal;
     $("v-kcal-wait").hidden = !noKcal;
-    $("v-build").hidden = !(c.paid && c.kcal && plans.length < 7);
-    $("v-pick").hidden = !(c.paid && plans.length >= 7 && !st);
-    $("v-plan").hidden = !(c.paid && st);
-    $("workout-card").hidden = !(c.paid && (c.workout_link || (PACKAGES[c.package] && PACKAGES[c.package].workout)));
+    $("v-build").hidden = !(paid && c.kcal && plans.length < 7);
+    $("v-pick").hidden = !(paid && plans.length >= 7 && !st);
+    $("v-plan").hidden = !(paid && st);
+    $("workout-card").hidden = !(paid && (c.workout_link || (PACKAGES[c.package] && PACKAGES[c.package].workout)));
     renderWorkout(c);
     if (!$("v-build").hidden) renderBuild(c);
     if (!$("v-pick").hidden) renderPick(c);
@@ -636,7 +650,7 @@ if ($("admin-login")) {
     if (!CLIENTS.length) { $("clients-table").innerHTML = ""; return; }
     $("clients-table").innerHTML = "<tr><th>" + [t("ad_c_name"), t("ad_c_target"), t("pt_package"), t("pt_status"), t("ad_days_chosen"), t("ad_today"), "InBody", ""].map(esc).join("</th><th>") + "</th></tr>" +
       CLIENTS.map(c => {
-        const pay = c.paid ? esc(t("ad_paid"))
+        const pay = !PAYMENT_ENABLED ? "—" : c.paid ? esc(t("ad_paid"))
           : c.pay_status === "rejected" ? '<span class="status-pill bad">' + esc(t("tr_rejected")) + "</span>"
           : '<button class="btn small" data-open="' + esc(c.id) + '">' + esc(t("ad_view_receipt")) + "</button>";
         const ib = c.inbody_requested ? '<span class="status-pill">' + esc(t("ib_requested")) + "</span>" : "✓";
@@ -683,8 +697,8 @@ if ($("admin-login")) {
     }
 
     // payment review
-    $("cd-pay").hidden = !!c.paid;
-    if (!c.paid) {
+    $("cd-pay").hidden = isPaid(c);
+    if (!isPaid(c)) {
       $("cd-pay-info").innerHTML = c.receipt_path ? "<p><b>" + esc(t("ad_amount")) + ":</b> " + (c.receipt_amount || "—") + " " + esc(t("sar")) + " · <b>" + esc(t("ad_sender")) + ":</b> " + esc(c.receipt_sender || "—") + " · <b>" + esc(t("ad_sent_at")) + ":</b> " + esc(fmtDate(c.receipt_date)) + "</p>" : "";
       $("cd-pay-actions").hidden = c.pay_status === "rejected" || !c.receipt_path;
       $("cd-receipt").innerHTML = c.receipt_path ? "<p class='muted'>…</p>" : "<p class='muted'>" + esc(t("ad_no_receipt")) + "</p>";
@@ -736,7 +750,7 @@ if ($("admin-login")) {
   $("refresh-btn").addEventListener("click", async () => { busy($("refresh-btn"), true); await Promise.all([loadClients(), loadSchedules(), loadRecipes()]); renderAll(); busy($("refresh-btn"), false); });
 
   function updateBadge() {
-    const n = CLIENTS.filter(c => (!c.paid && c.pay_status === "pending" && c.receipt_path) || (c.paid && !c.kcal)).length;
+    const n = CLIENTS.filter(c => (!isPaid(c) && c.pay_status === "pending" && c.receipt_path) || (isPaid(c) && !c.kcal)).length;
     document.querySelector('.tab[data-tab="clients"]').textContent = t("tab_clients") + (n ? " (" + n + ")" : "");
   }
   function renderAll() { renderSchedules(); renderRecipes(); renderClients(); renderDayEditor(); updateBadge(); }
