@@ -4,7 +4,8 @@ const SUPABASE_URL = "https://cpphymyouugaqkufphcq.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Q_9Cn11tSC6hraPhQcQItg_oKMPD_8i";
 
 let DB = (() => {
-  const SESSION_KEY = "mizan_auth";
+  // each app keeps its own login, so the dietitian app and the clients' app can be signed in to different accounts on one phone
+  const SESSION_KEY = /dietitian\.html|admin\.html/.test(location.pathname) ? "nojood_auth_pro" : "nojood_auth";
   let session = null;
   try { session = JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch (e) {}
 
@@ -61,7 +62,7 @@ let DB = (() => {
     const s = fromAuthResponse(await res.json()); keep(s); return s.user;
   }
   async function signOut() {
-    try { await fetch(SUPABASE_URL + "/auth/v1/logout", { method: "POST", headers: await headers() }); } catch (e) {}
+    try { await fetch(SUPABASE_URL + "/auth/v1/logout?scope=local", { method: "POST", headers: await headers() }); } catch (e) {}
     keep(null);
   }
   async function user() { return (await token()) ? session.user : null; }

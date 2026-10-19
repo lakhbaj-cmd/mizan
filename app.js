@@ -271,7 +271,7 @@ if ($("login-form")) {
     try {
       const rows = await DB.select("profiles", "select=*&id=eq." + u.id);
       me = rows[0] || null;
-      if (me && me.role === "admin") { location.href = "dietitian.html"; return; }
+      if (me && me.role === "admin") { await DB.signOut(); me = null; $("loading").hidden = true; $("login-err").textContent = t("pt_is_pro"); return render(); }
       await Promise.all([loadSchedules(), loadRecipes()]);
       loadDraft();
     } catch (e) { me = null; $("login-err").textContent = friendlyError(e); }
